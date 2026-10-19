@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="892" height="210" viewBox="0 0 892 210" role="img" aria-label="Viora intervention ladder: Gentle, Reflect, Recover and Protect">
+  <title>Viora intervention escalation ladder</title>
+  <defs>
+    <linearGradient id="page2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#141414"/>
+      <stop offset="100%" stop-color="#101a24"/>
+    </linearGradient>
+
+    <clipPath id="s1"><rect x="12" y="66" height="118" width="0"><animate attributeName="width" dur="12s" repeatCount="indefinite" values="0;0;205;205" keyTimes="0;0.04;0.14;1" calcMode="spline" keySplines="0 0 1 1;0.25 0.6 0.35 1;0 0 1 1"/></rect></clipPath>
+    <clipPath id="s2"><rect x="233" y="66" height="118" width="0"><animate attributeName="width" dur="12s" repeatCount="indefinite" values="0;0;205;205" keyTimes="0;0.14;0.24;1" calcMode="spline" keySplines="0 0 1 1;0.25 0.6 0.35 1;0 0 1 1"/></rect></clipPath>
+    <clipPath id="s3"><rect x="454" y="66" height="118" width="0"><animate attributeName="width" dur="12s" repeatCount="indefinite" values="0;0;205;205" keyTimes="0;0.24;0.34;1" calcMode="spline" keySplines="0 0 1 1;0.25 0.6 0.35 1;0 0 1 1"/></rect></clipPath>
+    <clipPath id="s4"><rect x="675" y="66" height="118" width="0"><animate attributeName="width" dur="12s" repeatCount="indefinite" values="0;0;205;205" keyTimes="0;0.34;0.44;1" calcMode="spline" keySplines="0 0 1 1;0.25 0.6 0.35 1;0 0 1 1"/></rect></clipPath>
+  </defs>
+
+  <rect width="892" height="210" rx="18" fill="url(#page2)"/>
+  <rect width="892" height="210" rx="18" fill="none" stroke="#2A2A2A" stroke-width="1.5"/>
+
+  <g font-family="'JetBrains Mono','Fira Code',Menlo,Consolas,monospace">
+    <text x="28" y="40" font-size="15" fill="#E8E8E8">escalation ladder</text>
+    <text x="864" y="40" font-size="12.5" fill="#6B6B6B" text-anchor="end">session elapsed →</text>
+
+    <g opacity="0">
+      <animate attributeName="opacity" dur="12s" repeatCount="indefinite" values="0;0;1;1;1;0" keyTimes="0;0.02;0.05;0.82;0.9;1"/>
+
+      <!-- stage 1 -->
+      <g clip-path="url(#s1)">
+        <rect x="12" y="66" width="205" height="118" rx="16" fill="#7ECBA1" fill-opacity="0.12" stroke="#7ECBA1" stroke-width="2"/>
+        <circle cx="42" cy="96" r="7" fill="#7ECBA1"><animate attributeName="r" dur="12s" repeatCount="indefinite" values="6;6;10;6;6" keyTimes="0;0.10;0.15;0.20;1"/></circle>
+        <text x="60" y="101" font-size="14" fill="#7ECBA1">GENTLE</text>
+        <text x="28" y="132" font-size="12.5" fill="#E8E8E8">"Take a breath."</text>
+        <text x="28" y="154" font-size="12.5" fill="#9E9E9E">banner · 30 min</text>
+      </g>
+
+      <!-- stage 2 -->
+      <g clip-path="url(#s2)">
+        <rect x="233" y="66" width="205" height="118" rx="16" fill="#FFD166" fill-opacity="0.12" stroke="#FFD166" stroke-width="2"/>
+        <circle cx="263" cy="96" r="7" fill="#FFD166"><animate attributeName="r" dur="12s" repeatCount="indefinite" values="6;6;6;10;6;6" keyTimes="0;0.18;0.22;0.26;0.31;1"/></circle>
+        <text x="281" y="101" font-size="14" fill="#FFD166">REFLECT</text>
+        <text x="249" y="132" font-size="12.5" fill="#E8E8E8">"Let's pause."</text>
+        <text x="249" y="154" font-size="12.5" fill="#9E9E9E">+ extend 5 min · 60</text>
+      </g>
+
+      <!-- stage 3 -->
+      <g clip-path="url(#s3)">
+        <rect x="454" y="66" width="205" height="118" rx="16" fill="#FF9A76" fill-opacity="0.12" stroke="#FF9A76" stroke-width="2"/>
+        <circle cx="484" cy="96" r="7" fill="#FF9A76"><animate attributeName="r" dur="12s" repeatCount="indefinite" values="6;6;6;6;10;6;6" keyTimes="0;0.28;0.30;0.34;0.38;0.43;1"/></circle>
+        <text x="502" y="101" font-size="14" fill="#FF9A76">RECOVER</text>
+        <text x="470" y="132" font-size="12.5" fill="#E8E8E8">"Take a breather."</text>
+        <text x="470" y="154" font-size="12.5" fill="#9E9E9E">hold-to-continue · 120</text>
+      </g>
+
+      <!-- stage 4 -->
+      <g clip-path="url(#s4)">
+        <rect x="675" y="66" width="205" height="118" rx="16" fill="#C4A8FF" fill-opacity="0.12" stroke="#C4A8FF" stroke-width="2"/>
+        <circle cx="705" cy="96" r="7" fill="#C4A8FF"><animate attributeName="r" dur="12s" repeatCount="indefinite" values="6;6;6;6;6;10;6;6" keyTimes="0;0.38;0.40;0.42;0.44;0.48;0.53;1"/></circle>
+        <text x="723" y="101" font-size="14" fill="#C4A8FF">PROTECT</text>
+        <text x="691" y="132" font-size="12.5" fill="#E8E8E8">"Step away."</text>
+        <text x="691" y="154" font-size="12.5" fill="#9E9E9E">close or focus · 180</text>
+      </g>
+
+      <text x="446" y="205" font-size="11.5" fill="#6B6B6B" text-anchor="middle">no hard blocks — every stage can be extended, dismissed, or converted into a focus session</text>
+    </g>
+  </g>
+</svg>

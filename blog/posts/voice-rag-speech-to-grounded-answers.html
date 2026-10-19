@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#090b0f">
+  <meta name="color-scheme" content="dark">
+  <title>Inside VOICE-RAG: From Speech to Grounded Answers | Infernix Engineering Journal</title>
+  <meta name="description" content="How VOICE-RAG builds a multilingual voice RAG system that refuses off-corpus questions: calibrated per-language relevance floors, a grounding guard, and a 56 ms retrieval core.">
+  <meta name="author" content="Pavan Ganesh Indupudi">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <link rel="canonical" href="https://the-infernix.github.io/blog/posts/voice-rag-speech-to-grounded-answers.html">
+  <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../styles.css">
+  <link rel="stylesheet" href="../blog.css">
+  <link rel="preload" href="../../assets/fonts/space-grotesk-var.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="../../assets/fonts/inter-var.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="../../assets/fonts/jetbrains-mono-var.woff2" as="font" type="font/woff2" crossorigin>
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Infernix">
+  <meta property="og:title" content="Inside VOICE-RAG: From Speech to Grounded Answers">
+  <meta property="og:description" content="Calibrated refusal floors, a grounding guard, and a 56 ms multilingual retrieval core — a RAG system that knows when not to answer.">
+  <meta property="og:url" content="https://the-infernix.github.io/blog/posts/voice-rag-speech-to-grounded-answers.html">
+  <meta property="og:image" content="https://the-infernix.github.io/assets/social-preview.svg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Inside VOICE-RAG: From Speech to Grounded Answers">
+  <meta name="twitter:description" content="Calibrated refusal floors, a grounding guard, and a 56 ms multilingual retrieval core — a RAG system that knows when not to answer.">
+  <meta name="twitter:image" content="https://the-infernix.github.io/assets/social-preview.svg">
+  <script>document.documentElement.classList.add("js");</script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "Inside VOICE-RAG: From Speech to Grounded Answers",
+    "description": "How VOICE-RAG builds a multilingual voice RAG system that refuses off-corpus questions: calibrated per-language relevance floors, a grounding guard, and a 56 ms retrieval core.",
+    "datePublished": "2026-10-19",
+    "dateModified": "2026-10-19",
+    "author": {
+      "@type": "Person",
+      "name": "Pavan Ganesh Indupudi",
+      "alternateName": ["Infernix", "Pavan Indupudi"],
+      "url": "https://the-infernix.github.io/"
+    },
+    "publisher": { "@id": "https://the-infernix.github.io/#person" },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://the-infernix.github.io/blog/posts/voice-rag-speech-to-grounded-answers.html"
+    },
+    "image": "https://the-infernix.github.io/assets/social-preview.svg",
+    "keywords": ["RAG", "retrieval-augmented generation", "voice interfaces", "multilingual ML", "guardrails"]
+  }
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div class="scanlines" aria-hidden="true"></div>
+
+  <header class="site-header" id="site-header">
+    <div class="header-inner">
+      <a class="brand" href="../../" aria-label="Infernix home — Pavan Ganesh Indupudi">
+        <svg class="brand-logo" viewBox="0 0 36 36" width="36" height="36" aria-hidden="true" focusable="false">
+          <rect x="1" y="1" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1" opacity=".55"/>
+          <path d="M11 9h13v4h-8v3h7v4h-7v7h-5z" fill="currentColor"/>
+          <rect x="24" y="23" width="5" height="5" fill="#ff9f2e"/>
+          <path d="M4 4h4M4 4v4M32 32h-4M32 32v-4" stroke="#ff9f2e" stroke-width="1.5" fill="none"/>
+        </svg>
+        <span class="brand-name">INFERNIX<span class="brand-cursor" aria-hidden="true">_</span></span>
+      </a>
+      <button class="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="site-nav">
+        <span class="menu-bar" aria-hidden="true"></span>
+        <span class="menu-bar" aria-hidden="true"></span>
+      </button>
+      <nav id="site-nav" class="site-nav" aria-label="Main navigation">
+        <a href="../../#about">ABOUT</a>
+        <a href="../../#work">PROJECTS</a>
+        <a href="../../#recognition">RECOGNITION</a>
+        <a href="../../#stack">STACK</a>
+        <a href="../" aria-current="page">JOURNAL</a>
+        <a href="../../#contact" class="nav-contact">CONTACT <span aria-hidden="true">↗</span></a>
+      </nav>
+    </div>
+    <div class="scroll-progress" id="scroll-progress" aria-hidden="true"></div>
+  </header>
+
+  <main id="main">
+    <header class="article-header article-wrap">
+      <a class="back-link" href="../"><span aria-hidden="true">←</span> Engineering Journal</a>
+      <div class="card-cats">
+        <span class="cat-tag">RAG</span>
+        <span class="cat-tag">ML Systems</span>
+      </div>
+      <h1>Inside VOICE-RAG: From Speech to Grounded Answers</h1>
+      <p class="article-subtitle">A RAG system that knows when not to answer is worth more than one that always does. Calibrated refusal floors, a grounding guard, and a 56 ms retrieval core across four languages.</p>
+      <div class="article-byline">
+        <span><strong>Pavan Ganesh Indupudi</strong> (Infernix)</span>
+        <span>Published 2026-10-19</span>
+        <span>Updated 2026-10-19</span>
+        <span>9 min read</span>
+      </div>
+    </header>
+
+    <div class="article-wrap article-layout">
+      <nav class="toc" id="toc" aria-label="Table of contents">
+        <p class="toc-label">CONTENTS</p>
+        <ol></ol>
+      </nav>
+
+      <article class="prose">
+        <p>Ask most RAG demos <em>"Who is the Prime Minister of India?"</em> and they will happily hallucinate an answer from whatever passage happens to look semantically close. VOICE-RAG — built for HH Goa 2026 — answers that question with a refusal and a number:</p>
+
+        <blockquote>Refused: Top retrieval score 0.779 below relevance floor 0.840</blockquote>
+
+        <p>That sentence is the whole thesis. The system answers spoken questions in English, Hindi, Gujarati, and Telugu — strictly from a curated 40,000-passage corpus — and <strong>refuses when the corpus does not contain the answer</strong>. This article covers why that turned out to be the hard part, and how the 56 ms core around it was built.</p>
+
+        <h2 id="problem">The problem: fluent answers with no evidence</h2>
+        <p>Retrieval-augmented generation fails in two directions. Too loose, and the generator papers over missing evidence with fluent nonsense. Too strict, and the system refuses questions it could have answered. Most demos only tune for the first failure — making answers <em>sound</em> grounded. We optimized for the second failure being <em>visible</em>: every refusal states its score and its floor, and the UI shows the entire evidence chain either way.</p>
+
+        <h2 id="constraints">Constraints</h2>
+        <ul>
+          <li><strong>Voice is the primary input.</strong> Hold-to-talk capture, 16 kHz mono WAV, Sarvam <code>saaras:v3</code> speech-to-text. Voice adds roughly 1 s of STT; everything after it had to be fast enough to disappear.</li>
+          <li><strong>Four languages, one index.</strong> English, Hindi, Gujarati, Telugu over the MSMARCO-XI corpus — 10k passages per language, 384-dim multilingual E5 embeddings.</li>
+          <li><strong>Corpus-bounded by design.</strong> World-knowledge questions with zero supporting passages must be refused, not answered from parametric memory.</li>
+          <li><strong>No bundler.</strong> The frontend is a vanilla-JS SPA served directly by FastAPI. Zero node_modules, zero build step.</li>
+        </ul>
+
+        <h2 id="architecture">Architecture: three guards around a 56 ms core</h2>
+        <p>The pipeline is a strict sequence, and every stage reports its latency and its decision into a trace the UI renders as a "why this answer" chain:</p>
+
+        <figure>
+          <img src="../../assets/projects/voice-rag-ui.png" alt="VOICE-RAG interface: a spoken question with evidence drawer, guard decision chain, and per-stage latency breakdown" width="900" height="455" loading="lazy" decoding="async">
+          <figcaption>The evidence drawer and latency trace — every guard decision is user-visible, not server-side secret sauce.</figcaption>
+        </figure>
+
+        <p><strong>Input guard → embed → vector search → relevance guard → generate → grounding guard.</strong> Measured medians (n = 2,000 benchmark queries):</p>
+
+        <table class="data-table">
+          <thead><tr><th>Stage</th><th>P50 latency</th><th>What happens</th></tr></thead>
+          <tbody>
+            <tr><td>Input guard</td><td class="num">0.02 ms</td><td>Injection / unsafe content / length checks</td></tr>
+            <tr><td>Embed query</td><td class="num">23.67 ms</td><td>E5 <code>query:</code> prefix → 384-dim vector</td></tr>
+            <tr><td>Vector search</td><td class="num">30.74 ms</td><td>Cosine over 40k passages + language rerank</td></tr>
+            <tr><td>Relevance guard</td><td class="num">0.01 ms</td><td>Top score vs calibrated floor</td></tr>
+            <tr><td>Answer generation</td><td class="num">0.09 ms</td><td>Best-sentence extraction from top passage</td></tr>
+            <tr><td>Grounding guard</td><td class="num">0.17 ms</td><td>Token overlap, embedding fallback if needed</td></tr>
+            <tr><td><strong>Total core</strong></td><td class="num"><strong>55.75 ms</strong></td><td>Target: &lt; 200 ms</td></tr>
+          </tbody>
+        </table>
+
+        <div class="callout decision">
+          <span class="callout-label">Design decision</span>
+          <p>Default to <strong>extractive</strong> answering — pick the best-supported sentence from the top passage — and make LLM generation strictly opt-in. Extractive answers are 0.09 ms and grounded by construction; generative answers take multiple seconds through OpenRouter and need a citation contract to stay honest. Latency budget first, generative flair when asked for.</p>
+        </div>
+
+        <h2 id="refusal-engine">The refusal engine: floors calibrated from measurements</h2>
+        <p>The relevance guard is one comparison — top-1 cosine score against a per-language floor — but the floors are not guesses. They were calibrated by measuring score distributions: known-relevant queries clustered around P25–P50 ≈ 0.84–0.86, off-corpus junk around ≈ 0.79–0.85, and the floors were set at the separation point:</p>
+
+        <table class="data-table">
+          <thead><tr><th>Language</th><th>Floor</th><th>Low-confidence band</th></tr></thead>
+          <tbody>
+            <tr><td>English</td><td class="num">0.840</td><td class="num">+0.03</td></tr>
+            <tr><td>Hindi</td><td class="num">0.850</td><td class="num">+0.03</td></tr>
+            <tr><td>Gujarati</td><td class="num">0.840</td><td class="num">+0.03</td></tr>
+            <tr><td>Telugu</td><td class="num">0.840</td><td class="num">+0.03</td></tr>
+          </tbody>
+        </table>
+
+        <p>The <em>query's</em> language selects the floor — not the top chunk's — so cross-language junk cannot sneak through under a borrowed threshold. Language detection is Unicode-script based (Telugu block → <code>te</code>, Gujarati → <code>gu</code>, Devanagari → <code>hi</code>, else <code>en</code>), and auto-detected language applies a soft +0.03 rerank bonus toward same-language passages over a 3× candidate pool.</p>
+
+        <div class="code-block">
+          <span class="code-lang">text — real refusal outputs from the benchmark run</span>
+          <pre><code>Q: Who is the Prime Minister of India?   → REFUSED  (0.779 &lt; 0.840)
+Q: Who won the FIFA World Cup 2022?      → REFUSED  (0.796 &lt; 0.840)
+Q: How much does an Xbox 360 cost?       → answered ($80–$250, conf 0.933)</code></pre>
+        </div>
+
+        <h2 id="grounding">The grounding guard: answers must be traceable</h2>
+        <p>Passing the relevance gate is not enough. The grounding guard verifies that the answer is actually supported by retrieved text: token overlap ≥ 0.231 passes instantly; below that, an embedding-similarity check (≥ 0.794) runs as fallback. Ungrounded generations are replaced with the extractive answer or refused outright.</p>
+        <p>When generative mode is enabled, the LLM must return strict JSON — <code>{answer, citations[], confidence}</code> — citing only supplied passages. Malformed output gets exactly one retry. Invented or out-of-range citations are dropped, and if none survive, the pipeline falls back to extractive. <strong>An ungrounded generation can never reach the user.</strong></p>
+
+        <h2 id="experiments">Experiments: 2,000 queries, and the hybrid detour</h2>
+        <p>The benchmark suite runs 2,000 corpus queries (500 per language, balanced, seed-fixed) against the prebuilt index:</p>
+
+        <table class="data-table">
+          <thead><tr><th>Metric</th><th>All</th><th>English</th><th>Hindi</th><th>Gujarati</th><th>Telugu</th></tr></thead>
+          <tbody>
+            <tr><td>P50</td><td class="num">55.8 ms</td><td class="num">54.9</td><td class="num">56.0</td><td class="num">56.7</td><td class="num">55.3</td></tr>
+            <tr><td>P90</td><td class="num">69.4 ms</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>
+            <tr><td>Within 200 ms</td><td class="num">99.95%</td><td class="num">100%</td><td class="num">99.8%</td><td class="num">100%</td><td class="num">100%</td></tr>
+          </tbody>
+        </table>
+
+        <p>Guard activity in that run: <strong>1,893 answered · 107 refused</strong> — weak-match queries correctly declined rather than answered with junk. The single P100 outlier (273 ms, Gujarati) was one OS-scheduling event; the next-worst query across all languages was 178 ms.</p>
+
+        <p>We also built and measured a hybrid BM25 + dense leg (bm25s, reciprocal rank fusion), evaluated against MSMARCO's own gold labels:</p>
+
+        <table class="data-table">
+          <thead><tr><th>Metric</th><th>Dense</th><th>Hybrid (BM25 + RRF)</th></tr></thead>
+          <tbody>
+            <tr><td>HitRate@10</td><td class="num">80.31%</td><td class="num">80.69%</td></tr>
+            <tr><td>MRR@10</td><td class="num">0.4664</td><td class="num">0.4669</td></tr>
+            <tr><td>Search P50</td><td class="num">16.2 ms</td><td class="num">16.9 ms</td></tr>
+          </tbody>
+        </table>
+
+        <div class="callout tradeoff">
+          <span class="callout-label">Trade-off</span>
+          <p>Hybrid bought +0.4 pp hit rate for ~1 ms and a large maintenance surface. Measured parity means dense-only stays the default; the sparse leg ships flag-ready behind <code>retrieval.hybrid.enabled</code> and off by default. RRF is used for candidate-pool expansion only — final ordering is always cosine, which keeps retrieval scores calibrated with the refusal floors. A hybrid ordering would have silently invalidated every floor we measured.</p>
+        </div>
+
+        <p>Every search also runs against a 200 ms deadline; skipped legs surface as explicit degradation strings (<code>sparse_leg_skipped_deadline</code>) in the stage trace, never as silent timeouts.</p>
+
+        <h2 id="limitations">Limitations</h2>
+        <ul>
+          <li><strong>Corpus-bounded knowledge.</strong> "What is the capital of India?" has zero supporting passages and is correctly refused — a feature, but it surprises users expecting a chatbot.</li>
+          <li><strong>The borderline zone is real.</strong> A band around 0.84–0.86 overlaps between weak-relevant and strong-junk retrievals. Per-language floors trade a little recall for a lot of precision; some answerable questions get refused.</li>
+          <li><strong>Voice adds ~1 s.</strong> Sarvam STT dominates end-to-end time; the RAG core's 56 ms is invisible under it.</li>
+          <li><strong>Generative mode is opt-in</strong> precisely because it breaks the latency budget.</li>
+        </ul>
+
+        <div class="callout lesson">
+          <span class="callout-label">Lesson</span>
+          <p>Calibrate thresholds from <strong>measured score distributions</strong>, not intuition. The floors took an afternoon of histogram work and saved the product: without them, the system would have been confidently wrong in exactly the situations where being wrong matters most. A refusal with a stated score is also infinitely more debuggable than a silent abstention.</p>
+        </div>
+
+        <h2 id="reproducibility">Reproducibility</h2>
+        <p>The prebuilt index (40k × 384-dim vectors) ships with the repo, so first run needs no indexing step. Raw per-query benchmark data is committed at <code>bench/results/results.json</code>.</p>
+        <div class="code-block">
+          <span class="code-lang">bash — reproduce every number in this article</span>
+          <pre><code>git clone https://github.com/The-Infernix/VOICE-RAG.git
+cd VOICE-RAG
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn api.main:app --port 7860   # SPA at http://localhost:7860
+
+pytest tests/ -q                   # 178 passing
+python bench/run_bench.py --limit 2000      # latency
+python bench/eval_retrieval.py               # HitRate@10 / MRR@10 vs gold
+python bench/run_bench.py --limit 500 --hybrid --soft-lang \
+  --out bench/results/ab_hybrid              # the hybrid A/B above</code></pre>
+        </div>
+
+        <h2 id="takeaways">Takeaways</h2>
+        <ol>
+          <li>Refusal is a product feature, not an error path. Make it measurable, calibrated, and visible.</li>
+          <li>Guard every stage independently — input, relevance, grounding — and surface every decision in the UI trace.</li>
+          <li>When a measured improvement is inside the noise, ship the simpler system and keep the complex one behind a flag.</li>
+          <li>Keep retrieval ordering aligned with whatever your thresholds were calibrated against.</li>
+        </ol>
+
+        <div class="article-end">
+          <h2 id="references">References</h2>
+          <ul class="ref-list">
+            <li>VOICE-RAG repository — <a href="https://github.com/The-Infernix/VOICE-RAG" target="_blank" rel="noopener noreferrer">github.com/The-Infernix/VOICE-RAG</a> (bench results, 178-test suite, config)</li>
+            <li><code>bench/results/summary.json</code> — the latency numbers quoted above</li>
+            <li><code>bench/eval_retrieval.py</code> — gold-label evaluation against MSMARCO <code>is_selected</code> labels</li>
+            <li><code>guardrails/relevance_guard.py</code> — the calibrated per-language floors</li>
+            <li>Built for HH Goa 2026, Task 2</li>
+          </ul>
+
+          <h2 id="related">Related reading</h2>
+          <div class="related-grid">
+            <a class="related-card" href="./privyse-privacy-first-browser-agent.html">
+              <span class="rc-cat">AI Agents · Privacy Engineering</span>
+              <span class="rc-title">Building PRIVYSE: Designing a Privacy-First Browser Agent</span>
+            </a>
+            <a class="related-card" href="./debugging-browser-ml-inference-onnx.html">
+              <span class="rc-cat">ML Systems · Draft</span>
+              <span class="rc-title">Debugging Browser-Based ML Inference: Lessons from ONNX Runtime Web</span>
+            </a>
+            <a class="related-card" href="../../#work">
+              <span class="rc-cat">Portfolio</span>
+              <span class="rc-title">All projects — PRIVYSE, VOICE-RAG, SourceTrail, Viora</span>
+            </a>
+          </div>
+        </div>
+      </article>
+    </div>
+  </main>
+
+  <footer class="site-footer section-wrap">
+    <a class="brand footer-brand" href="../../" aria-label="Back to portfolio home">
+      <svg class="brand-logo" viewBox="0 0 36 36" width="28" height="28" aria-hidden="true" focusable="false">
+        <rect x="1" y="1" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1" opacity=".55"/>
+        <path d="M11 9h13v4h-8v3h7v4h-7v7h-5z" fill="currentColor"/>
+        <rect x="24" y="23" width="5" height="5" fill="#ff9f2e"/>
+      </svg>
+      <span class="brand-name">INFERNIX<span class="brand-cursor" aria-hidden="true">_</span></span>
+    </a>
+    <span>© <span id="year">2026</span> Pavan Ganesh Indupudi (Pavan Indupudi)</span>
+    <span class="footer-system">ENGINEERING JOURNAL · v1.0</span>
+    <span class="footer-note">DESIGNED TO KEEP BUILDING <span class="accent" aria-hidden="true">✳</span></span>
+  </footer>
+
+  <script src="../../script.js" defer></script>
+  <script src="../blog.js" defer></script>
+</body>
+</html>

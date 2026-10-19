@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#090b0f">
+  <meta name="color-scheme" content="dark">
+  <title>Engineering Journal | Pavan Ganesh Indupudi (Infernix)</title>
+  <meta name="description" content="The Infernix Engineering Journal — technical articles on building privacy-first AI agents, multilingual RAG systems, and ML inference in the browser, by Pavan Ganesh Indupudi.">
+  <meta name="author" content="Pavan Ganesh Indupudi">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <link rel="canonical" href="https://the-infernix.github.io/blog/">
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="./blog.css">
+  <link rel="preload" href="../assets/fonts/space-grotesk-var.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="../assets/fonts/inter-var.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="../assets/fonts/jetbrains-mono-var.woff2" as="font" type="font/woff2" crossorigin>
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Infernix">
+  <meta property="og:title" content="Infernix Engineering Journal">
+  <meta property="og:description" content="Technical articles documenting real engineering work, experiments, architecture, and lessons — by Pavan Ganesh Indupudi.">
+  <meta property="og:url" content="https://the-infernix.github.io/blog/">
+  <meta property="og:image" content="https://the-infernix.github.io/assets/social-preview.svg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Infernix Engineering Journal">
+  <meta name="twitter:description" content="Technical articles documenting real engineering work, experiments, architecture, and lessons — by Pavan Ganesh Indupudi.">
+  <meta name="twitter:image" content="https://the-infernix.github.io/assets/social-preview.svg">
+  <script>document.documentElement.classList.add("js");</script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Blog",
+    "name": "Infernix Engineering Journal",
+    "url": "https://the-infernix.github.io/blog/",
+    "description": "Technical articles on privacy-first AI agents, multilingual RAG, browser ML inference, and software engineering.",
+    "author": { "@id": "https://the-infernix.github.io/#person" },
+    "publisher": { "@id": "https://the-infernix.github.io/#person" }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    "@id": "https://the-infernix.github.io/#person",
+    "name": "Pavan Ganesh Indupudi",
+    "alternateName": ["Infernix", "Pavan Indupudi"],
+    "url": "https://the-infernix.github.io/",
+    "sameAs": [
+      "https://github.com/The-Infernix",
+      "https://www.linkedin.com/in/pavan-indupudi-a38759334"
+    ]
+  }
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div class="scanlines" aria-hidden="true"></div>
+
+  <header class="site-header" id="site-header">
+    <div class="header-inner">
+      <a class="brand" href="../" aria-label="Infernix home — Pavan Ganesh Indupudi">
+        <svg class="brand-logo" viewBox="0 0 36 36" width="36" height="36" aria-hidden="true" focusable="false">
+          <rect x="1" y="1" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1" opacity=".55"/>
+          <path d="M11 9h13v4h-8v3h7v4h-7v7h-5z" fill="currentColor"/>
+          <rect x="24" y="23" width="5" height="5" fill="#ff9f2e"/>
+          <path d="M4 4h4M4 4v4M32 32h-4M32 32v-4" stroke="#ff9f2e" stroke-width="1.5" fill="none"/>
+        </svg>
+        <span class="brand-name">INFERNIX<span class="brand-cursor" aria-hidden="true">_</span></span>
+      </a>
+      <button class="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="site-nav">
+        <span class="menu-bar" aria-hidden="true"></span>
+        <span class="menu-bar" aria-hidden="true"></span>
+      </button>
+      <nav id="site-nav" class="site-nav" aria-label="Main navigation">
+        <a href="../#about">ABOUT</a>
+        <a href="../#work">PROJECTS</a>
+        <a href="../#recognition">RECOGNITION</a>
+        <a href="../#stack">STACK</a>
+        <a href="./" aria-current="page">JOURNAL</a>
+        <a href="../#contact" class="nav-contact">CONTACT <span aria-hidden="true">↗</span></a>
+      </nav>
+    </div>
+    <div class="scroll-progress" id="scroll-progress" aria-hidden="true"></div>
+  </header>
+
+  <main id="main">
+    <div class="journal-wrap">
+      <header class="journal-hero">
+        <p class="eyebrow reveal" data-reveal>
+          <span class="status-dot" aria-hidden="true"></span>
+          INFERNIX ENGINEERING JOURNAL
+          <span class="eyebrow-line" aria-hidden="true"></span>
+          2026
+        </p>
+        <h1 class="reveal" data-reveal>Engineering <span class="accent">Journal.</span></h1>
+        <p class="journal-intro reveal" data-reveal>Notes from the workshop — how the systems on this site were actually built: architecture decisions, measured experiments, trade-offs that didn't fit in a README, and the lessons that survived contact with the benchmarks. Written by <strong>Pavan Ganesh Indupudi</strong> (Infernix).</p>
+      </header>
+
+      <div class="filter-bar reveal" data-reveal role="group" aria-label="Filter articles by category">
+        <span class="filter-label" aria-hidden="true">FILTER</span>
+        <button type="button" class="filter-chip" data-filter="all" aria-pressed="true">All</button>
+        <button type="button" class="filter-chip" data-filter="ai-agents" aria-pressed="false">AI Agents</button>
+        <button type="button" class="filter-chip" data-filter="privacy" aria-pressed="false">Privacy Engineering</button>
+        <button type="button" class="filter-chip" data-filter="rag" aria-pressed="false">RAG</button>
+        <button type="button" class="filter-chip" data-filter="ml-systems" aria-pressed="false">ML Systems</button>
+        <button type="button" class="filter-chip" data-filter="android" aria-pressed="false">Android</button>
+        <button type="button" class="filter-chip" data-filter="open-source" aria-pressed="false">Open Source</button>
+        <div class="filter-search">
+          <label for="journal-search">SEARCH</label>
+          <input type="search" id="journal-search" placeholder="title keywords…" autocomplete="off">
+        </div>
+      </div>
+      <p class="filter-count" id="filter-count" aria-live="polite"></p>
+
+      <!-- featured -->
+      <article class="featured-article reveal" data-reveal
+               data-cats="ai-agents privacy"
+               data-title="Building PRIVYSE: Designing a Privacy-First Browser Agent">
+        <div class="featured-body">
+          <span class="featured-flag">FEATURED · PRIVACY ENGINEERING</span>
+          <h2><a href="./posts/privyse-privacy-first-browser-agent.html">Building PRIVYSE: Designing a Privacy-First Browser Agent</a></h2>
+          <p class="featured-summary">Most computer-use agents ship raw screenshots — every email, ID, and password — to a remote vision model. PRIVYSE changes the order of operations: understand and sanitize the page on-device, prove the payload is clean through a fail-closed gate, and only then let the model reason. This is the architecture, the benchmarks, and the two open defects we refuse to hide.</p>
+          <div class="card-meta">
+            <span class="meta-date">2026-10-19</span>
+            <span>12 min read</span>
+            <span>AI Agents · Privacy Engineering</span>
+          </div>
+        </div>
+        <a class="featured-media" href="./posts/privyse-privacy-first-browser-agent.html" tabindex="-1" aria-hidden="true">
+          <img src="../assets/projects/privyse-model-view.png" alt="" width="840" height="470" loading="lazy" decoding="async">
+        </a>
+      </article>
+
+      <div class="article-grid">
+        <article class="article-card reveal" data-reveal
+                 data-cats="rag ml-systems"
+                 data-title="Inside VOICE-RAG: From Speech to Grounded Answers">
+          <div class="card-cats">
+            <span class="cat-tag">RAG</span>
+            <span class="cat-tag">ML Systems</span>
+          </div>
+          <h3><a href="./posts/voice-rag-speech-to-grounded-answers.html">Inside VOICE-RAG: From Speech to Grounded Answers</a></h3>
+          <p class="card-summary">A RAG system that knows when not to answer is worth more than one that always does. How calibrated per-language relevance floors, a grounding guard, and a 56 ms retrieval core came together — and where the borderline zone still hurts.</p>
+          <div class="card-meta">
+            <span class="meta-date">2026-10-19</span>
+            <span>9 min read</span>
+          </div>
+        </article>
+
+        <article class="article-card reveal" data-reveal
+                 data-cats="ml-systems"
+                 data-title="Debugging Browser-Based ML Inference: Lessons from ONNX Runtime Web">
+          <div class="card-cats">
+            <span class="cat-tag">ML Systems</span>
+            <span class="cat-tag draft">DRAFT</span>
+          </div>
+          <h3><a href="./posts/debugging-browser-ml-inference-onnx.html">Debugging Browser-Based ML Inference: Lessons from ONNX Runtime Web</a></h3>
+          <p class="card-summary">Running MobileViT inside a browser extension means WebGPU when you can get it, WASM when you can't, and failure modes that only exist at the intersection. An honest draft — the debugging war stories are TODOs until the notes are verified.</p>
+          <div class="card-meta">
+            <span class="meta-date">2026-10-19</span>
+            <span>6 min read</span>
+          </div>
+        </article>
+
+        <article class="article-card reveal" data-reveal
+                 data-cats="ai-agents privacy ml-systems"
+                 data-title="Three Tiers of Redaction: Classifying Sensitive Information on Screen">
+          <div class="card-cats">
+            <span class="cat-tag">Privacy Engineering</span>
+            <span class="cat-tag draft">DRAFT</span>
+          </div>
+          <h3><a href="./posts/privyse-privacy-first-browser-agent.html#three-tiers">Three Tiers of Redaction: Classifying Sensitive Information on Screen</a></h3>
+          <p class="card-summary">Passwords, PANs, and faces deserve different protections. Why PRIVYSE redacts secrets with black boxes, rewrites PII into stable tokens, and blurs pixels — and how Set-of-Marks keeps the model useful after redaction.</p>
+          <div class="card-meta">
+            <span class="meta-date">2026-10-19</span>
+            <span>Planned</span>
+          </div>
+        </article>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer section-wrap">
+    <a class="brand footer-brand" href="../" aria-label="Back to portfolio home">
+      <svg class="brand-logo" viewBox="0 0 36 36" width="28" height="28" aria-hidden="true" focusable="false">
+        <rect x="1" y="1" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1" opacity=".55"/>
+        <path d="M11 9h13v4h-8v3h7v4h-7v7h-5z" fill="currentColor"/>
+        <rect x="24" y="23" width="5" height="5" fill="#ff9f2e"/>
+      </svg>
+      <span class="brand-name">INFERNIX<span class="brand-cursor" aria-hidden="true">_</span></span>
+    </a>
+    <span>© <span id="year">2026</span> Pavan Ganesh Indupudi (Pavan Indupudi)</span>
+    <span class="footer-system">ENGINEERING JOURNAL · v1.0</span>
+    <span class="footer-note">DESIGNED TO KEEP BUILDING <span class="accent" aria-hidden="true">✳</span></span>
+  </footer>
+
+  <script src="../script.js" defer></script>
+  <script src="./blog.js" defer></script>
+</body>
+</html>

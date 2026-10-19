@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#090b0f">
+  <meta name="color-scheme" content="dark">
+  <title>Building PRIVYSE: Designing a Privacy-First Browser Agent | Infernix Engineering Journal</title>
+  <meta name="description" content="How PRIVYSE inverts the browser-agent pipeline: on-device sanitization, a fail-closed zero-leak gate, and perception-driven model routing — with real benchmarks and two openly documented defects.">
+  <meta name="author" content="Pavan Ganesh Indupudi">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <link rel="canonical" href="https://the-infernix.github.io/blog/posts/privyse-privacy-first-browser-agent.html">
+  <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../styles.css">
+  <link rel="stylesheet" href="../blog.css">
+  <link rel="preload" href="../../assets/fonts/space-grotesk-var.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="../../assets/fonts/inter-var.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="../../assets/fonts/jetbrains-mono-var.woff2" as="font" type="font/woff2" crossorigin>
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Infernix">
+  <meta property="og:title" content="Building PRIVYSE: Designing a Privacy-First Browser Agent">
+  <meta property="og:description" content="On-device sanitization, a fail-closed zero-leak gate, and perception-driven model routing — with real benchmarks and openly documented defects.">
+  <meta property="og:url" content="https://the-infernix.github.io/blog/posts/privyse-privacy-first-browser-agent.html">
+  <meta property="og:image" content="https://the-infernix.github.io/assets/social-preview.svg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Building PRIVYSE: Designing a Privacy-First Browser Agent">
+  <meta name="twitter:description" content="On-device sanitization, a fail-closed zero-leak gate, and perception-driven model routing — with real benchmarks and openly documented defects.">
+  <meta name="twitter:image" content="https://the-infernix.github.io/assets/social-preview.svg">
+  <script>document.documentElement.classList.add("js");</script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "Building PRIVYSE: Designing a Privacy-First Browser Agent",
+    "description": "How PRIVYSE inverts the browser-agent pipeline: on-device sanitization, a fail-closed zero-leak gate, and perception-driven model routing.",
+    "datePublished": "2026-10-19",
+    "dateModified": "2026-10-19",
+    "author": {
+      "@type": "Person",
+      "name": "Pavan Ganesh Indupudi",
+      "alternateName": ["Infernix", "Pavan Indupudi"],
+      "url": "https://the-infernix.github.io/"
+    },
+    "publisher": { "@id": "https://the-infernix.github.io/#person" },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://the-infernix.github.io/blog/posts/privyse-privacy-first-browser-agent.html"
+    },
+    "image": "https://the-infernix.github.io/assets/social-preview.svg",
+    "keywords": ["privacy engineering", "AI agents", "browser extension", "on-device ML", "fail-closed design"]
+  }
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div class="scanlines" aria-hidden="true"></div>
+
+  <header class="site-header" id="site-header">
+    <div class="header-inner">
+      <a class="brand" href="../../" aria-label="Infernix home — Pavan Ganesh Indupudi">
+        <svg class="brand-logo" viewBox="0 0 36 36" width="36" height="36" aria-hidden="true" focusable="false">
+          <rect x="1" y="1" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1" opacity=".55"/>
+          <path d="M11 9h13v4h-8v3h7v4h-7v7h-5z" fill="currentColor"/>
+          <rect x="24" y="23" width="5" height="5" fill="#ff9f2e"/>
+          <path d="M4 4h4M4 4v4M32 32h-4M32 32v-4" stroke="#ff9f2e" stroke-width="1.5" fill="none"/>
+        </svg>
+        <span class="brand-name">INFERNIX<span class="brand-cursor" aria-hidden="true">_</span></span>
+      </a>
+      <button class="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="site-nav">
+        <span class="menu-bar" aria-hidden="true"></span>
+        <span class="menu-bar" aria-hidden="true"></span>
+      </button>
+      <nav id="site-nav" class="site-nav" aria-label="Main navigation">
+        <a href="../../#about">ABOUT</a>
+        <a href="../../#work">PROJECTS</a>
+        <a href="../../#recognition">RECOGNITION</a>
+        <a href="../../#stack">STACK</a>
+        <a href="../" aria-current="page">JOURNAL</a>
+        <a href="../../#contact" class="nav-contact">CONTACT <span aria-hidden="true">↗</span></a>
+      </nav>
+    </div>
+    <div class="scroll-progress" id="scroll-progress" aria-hidden="true"></div>
+  </header>
+
+  <main id="main">
+    <header class="article-header article-wrap">
+      <a class="back-link" href="../"><span aria-hidden="true">←</span> Engineering Journal</a>
+      <div class="card-cats">
+        <span class="cat-tag">AI Agents</span>
+        <span class="cat-tag">Privacy Engineering</span>
+      </div>
+      <h1>Building PRIVYSE: Designing a Privacy-First Browser Agent</h1>
+      <p class="article-subtitle">Most computer-use agents ship your raw screen to a remote model. PRIVYSE inverts the pipeline: sanitize on-device, prove the payload is clean, then — and only then — let the model reason.</p>
+      <div class="article-byline">
+        <span><strong>Pavan Ganesh Indupudi</strong> (Infernix)</span>
+        <span>Published 2026-10-19</span>
+        <span>Updated 2026-10-19</span>
+        <span>12 min read</span>
+      </div>
+    </header>
+
+    <div class="article-wrap article-layout">
+      <nav class="toc" id="toc" aria-label="Table of contents">
+        <p class="toc-label">CONTENTS</p>
+        <ol></ol>
+      </nav>
+
+      <article class="prose">
+        <p>The pitch for browser agents is seductive: give a vision-language model access to your tabs, and it can fill forms, file reports, and navigate tools you never wrote an integration for. The implementation detail that pitch skips is brutal — <strong>to see the page, the model sees everything on the page</strong>. Your email. Your PAN. The card number half-typed into a KYC form. Your face in a video call thumbnail.</p>
+
+        <p>PRIVYSE — built for SIH track 26171, <em>On-device Visual Perception for Lightweight Browser Agents</em> — starts from a different question: <strong>how do we let the model control the browser without giving it the user's private screen?</strong> The answer is not a privacy policy bolted onto a normal agent. It is an inverted pipeline where privacy is the architecture.</p>
+
+        <h2 id="the-problem">The problem: agents that trust the model with the screen</h2>
+        <p>A conventional computer-use agent does one thing every step: capture the viewport, ship the pixels, ask the model what to do. That single habit can expose emails, phone numbers, government IDs, passwords, OTPs, API keys, faces, and sensitive documents — all in one JPEG. Prompting the model to "ignore" the PII does nothing; the data has already left the device.</p>
+        <p>Sanitizing <em>after</em> the model has seen the screen is not sanitization. The only place privacy can be enforced is <strong>before the privacy boundary</strong> — between the browser and the model.</p>
+
+        <h2 id="constraints">Constraints that shaped the design</h2>
+        <ul>
+          <li><strong>The boundary must be demonstrable.</strong> Not "we promise not to log it" — a gate a user can watch, failing closed, on every step.</li>
+          <li><strong>The DOM is not enough.</strong> Modern pages hide values in <code>&lt;canvas&gt;</code>, SVG, images, video, and tiny rendered text. A DOM-only sanitizer has holes you cannot see.</li>
+          <li><strong>Redaction cannot destroy context.</strong> If every email becomes a black box, the model cannot complete tasks that need to reference it. The rewrite has to preserve referential structure.</li>
+          <li><strong>The agent must stay useful.</strong> A gate that blocks every image-heavy page forever is a denial-of-service, not a privacy system — degradation has to be explicit, not silent.</li>
+        </ul>
+
+        <h2 id="architecture">Architecture: capture → sanitize → gate → reason → act</h2>
+        <p>Every agent step runs the same visible pipeline. The most important component in it is not the model — it is the gate.</p>
+
+        <figure>
+          <img src="../../assets/projects/privyse-architecture.svg" alt="PRIVYSE architecture: capture, on-device perceive and sanitize, zero-leak gate, local VLM with perception routing, guarded execute" width="940" height="530" loading="lazy" decoding="async">
+          <figcaption>One agent step end-to-end. The gate (04) is the only path across the privacy boundary.</figcaption>
+        </figure>
+
+        <ol>
+          <li><strong>Capture</strong> — <code>captureVisibleTab</code> grabs the viewport; a DOM walker serializes interactive elements (id, label, role, value, bbox) capped at 120 elements, and hashes pixels for the perception cache.</li>
+          <li><strong>Perceive</strong> — MobileViT-Small (quantized ONNX, 6.3 MB), BlazeFace, and region-restricted Tesseract.js OCR run locally, in parallel.</li>
+          <li><strong>Sanitize</strong> — three tiers of redaction (below), then Set-of-Marks paints numbered <code>[N]</code> tags so the model targets integers, never coordinates.</li>
+          <li><strong>Gate</strong> — two independent checks, detailed in the next section. Any hit blocks the step.</li>
+          <li><strong>Reason</strong> — only the redacted JPEG plus numbered DOM reach the local FastAPI server, which routes to a Qwen2.5-VL 3B or 7B and gets exactly one JSON action back.</li>
+          <li><strong>Act</strong> — a guarded executor resolves element ids and drives pointer/keyboard events through scheme allow-lists and a DO-NOT-MODIFY veto.</li>
+        </ol>
+
+        <h2 id="three-tiers">Three tiers of redaction — and why tokens beat black boxes</h2>
+        <p>Not all sensitive data deserves the same protection. PRIVYSE classifies into three tiers:</p>
+
+        <table class="data-table">
+          <thead><tr><th>Tier</th><th>Information</th><th>Protection</th></tr></thead>
+          <tbody>
+            <tr><td>Tier A</td><td>Passwords, OTPs, CVVs, API keys</td><td>Solid black box — no text, no token</td></tr>
+            <tr><td>Tier B</td><td>Email, phone, PAN, Aadhaar, cards, names</td><td>Stable privacy token</td></tr>
+            <tr><td>Tier C</td><td>Faces, canvas, video, non-DOM graphics</td><td>Blur / region taint</td></tr>
+          </tbody>
+        </table>
+
+        <p>Tier B is the interesting one. Destroying a value with a black box removes context the model needs; leaving it is a leak. The compromise is <strong>stable tokenization</strong> — the same raw value always maps to the same token for the run, so the model keeps continuity without ever seeing the secret:</p>
+
+        <div class="code-block">
+          <span class="code-lang">text — stable token mapping (from the PRIVYSE benchmark suite)</span>
+          <pre><code>john@example.com           4111 1111 1111 1111          9876543210@ybl
+       ↓                           ↓                          ↓
+   [EMAIL_1]                   [CARD_1]                   [UPI_1]</code></pre>
+        </div>
+
+        <p>Cross-source continuity is deliberate: a value discovered by OCR in an image receives the <em>same</em> token when it later appears in the DOM. Indian identifiers — UPI IDs, voter ID, driving licence, passport, PAN, Aadhaar, IFSC — have dedicated detection patterns, measured at 100% precision/recall on the GT benchmark pages.</p>
+
+        <div class="callout decision">
+          <span class="callout-label">Design decision</span>
+          <p>Tokens must be <strong>stable across the whole run</strong>, not per-screenshot. Per-frame tokens would make the model re-learn the mapping every step and break any task that references a value found earlier. Global stability is also what lets the gate recognize a token as already-sanitized rather than as a leak.</p>
+        </div>
+
+        <h2 id="the-gate">The zero-leak gate: two checks, one fail-closed rule</h2>
+        <p>Before anything crosses the boundary, the outbound payload is verified twice:</p>
+        <ol>
+          <li><strong>DOM verification</strong> — a pure regex scan (<code>assertNoLeaks</code>) over the outbound DOM JSON. Always runs. Cannot be skipped.</li>
+          <li><strong>Pixel verification</strong> — the <em>actual sanitized screenshot bytes</em> are OCR-scanned again. This is the check that catches PII the DOM never carried.</li>
+        </ol>
+
+        <div class="callout tradeoff">
+          <span class="callout-label">Stated exception — read this before trusting the boundary</span>
+          <p>The two layers do not fail identically. A DOM-layer failure can never send. A pixel-layer check that runs and finds PII can never send. But if the on-device vision host is down, PII that exists <em>only in pixels</em> is not OCR-verified on that step. Blocking every image-heavy page indefinitely would make the agent unusable, so the degradation is deliberate — the side panel reports <code>gate: skip</code> — and all nine failure paths are walked in <code>docs/perception-failure-path-audit.md</code>. It is a real, narrow gap, not a claim of airtightness.</p>
+        </div>
+
+        <figure>
+          <img src="../../assets/projects/privyse-model-view.png" alt="The exact sanitized image shipped to the VLM: a KYC form with every sensitive value replaced by a stable token" width="840" height="470" loading="lazy" decoding="async">
+          <figcaption>The exact bytes that cross the privacy boundary — reproduced by the benchmark suite's demo-image runner.</figcaption>
+        </figure>
+
+        <h2 id="routing">Perception-driven model routing</h2>
+        <p>On-device perception pays a second dividend: the MobileViT tile map tells the server how much reasoning the step needs <em>before</em> the model is called. Interactive steps (form fill, navigation, typing) route to the 3B; read/report/captcha steps route to the 7B. Measured on the routing benchmark:</p>
+
+        <table class="data-table">
+          <thead><tr><th>Routing config</th><th>Visual-context tasks</th><th>Steps</th></tr></thead>
+          <tbody>
+            <tr><td>qwen2.5vl:3b only</td><td class="num">2 / 3</td><td class="num">4.7</td></tr>
+            <tr><td>qwen2.5vl:7b only</td><td class="num">3 / 3</td><td class="num">1.3</td></tr>
+            <tr><td>Routed 3B / 7B</td><td class="num">2 / 3</td><td class="num">5.0</td></tr>
+          </tbody>
+        </table>
+
+        <p>The routed read/report failure is documented as a property of the harder prose-heavy test page, not of the routing logic — interactive accuracy is 3/3 either way. The small model is never trusted blindly: streamed actions are validated, coerced, and guarded before execution.</p>
+
+        <h2 id="experiments">Experiments: what the benchmarks actually say</h2>
+        <p>All numbers come from the repo's own suite (<code>benchmarks/results/dashboard.json</code> plus the suite runners), against ground-truth-labeled pages:</p>
+
+        <table class="data-table">
+          <thead><tr><th>Metric</th><th>Result</th></tr></thead>
+          <tbody>
+            <tr><td>PII detection F1 (pixels)</td><td class="num">0.984</td></tr>
+            <tr><td>Precision / Recall</td><td class="num">0.968 / 1.000</td></tr>
+            <tr><td>Zero-leak</td><td class="num">PASS</td></tr>
+            <tr><td>Adversarial privacy suite</td><td class="num">30 / 30 blocked</td></tr>
+            <tr><td>Executor guard tests</td><td class="num">27 / 27 passed</td></tr>
+            <tr><td>Live /act spot-check (forged hostile responses)</td><td class="num">10 / 10 refused</td></tr>
+            <tr><td>Raw data off-device</td><td class="num">0 MB</td></tr>
+            <tr><td>Routed end-to-end latency</td><td class="num">≈ 12.7–13 s / step</td></tr>
+          </tbody>
+        </table>
+
+        <p>The adversarial suite is the number I trust most, because it is the least flattering: canvas PII, SVG PII, tiny text, obfuscated values, visual and text prompt injection, exfiltration via <code>data:</code>/<code>blob:</code>/<code>javascript:</code> form actions, forged <code>/act</code> responses, and protected-field overwrite attempts. Thirty attempts, thirty blocks. The executor's DO-NOT-MODIFY veto is deterministic, which means it defends against a <em>hostile server response</em>, not just an honest model making a mistake.</p>
+
+        <div class="callout failure">
+          <span class="callout-label">Known flake — honest reporting</span>
+          <p>The zero-leak OCR gate is occasionally nondeterministic — roughly 1 failure in 4 full runs, a blur-sample variance on one image page. The critical property: it has never failed <em>open</em>. When OCR cannot confirm, the step is blocked. A flaky gate that fails closed is a latency problem; a reliable gate that fails open is a privacy incident.</p>
+        </div>
+
+        <h2 id="limitations">Limitations: the two defects we document instead of bury</h2>
+        <p>Our own audit of the human-in-the-loop path found two high-severity defects, now tracked publicly in the README:</p>
+        <ul>
+          <li><strong>D2 (open, queued first)</strong> — <code>history[].result</code> and the user's <code>task</code> string are attached to the outbound body untokenized, and the DOM gate only walks <code>body.dom[].text/value</code>. PII typed into a human-in-the-loop answer could leave in plaintext with the gate blind to it. Until D2 is closed, the honest statement of the boundary is: <em>DOM-sourced PII is provably blocked; PII introduced through the agent's own conversation with the user is not yet covered.</em></li>
+          <li><strong>D1 (open)</strong> — the risky-action confirm detects Cancel via <code>startsWith("cancel")</code>, so typing "no" executes the action. It needs an explicit allow-list.</li>
+        </ul>
+        <p>Listing these is not humility theater. A privacy claim a reader cannot check is marketing; a privacy claim with a public defect table is engineering.</p>
+
+        <div class="callout lesson">
+          <span class="callout-label">Lesson</span>
+          <p>Build the audit harness <em>before</em> the feature that needs auditing. D2 was found by walking the human-in-the-loop paths with a test matrix, not by staring at the sanitizer. The same discipline that produced 30/30 on the adversarial suite produced the defect table — it is one muscle.</p>
+        </div>
+
+        <h2 id="reproducibility">Reproducibility</h2>
+        <p>Everything above is reproducible from the public repo. The short version:</p>
+        <div class="code-block">
+          <span class="code-lang">powershell — server + benchmarks</span>
+          <pre><code>cd server
+.venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn app:app --reload          # http://127.0.0.1:8000/health
+
+# optional perception routing
+$env:PERCEPTION_ROUTING = "1"
+$env:VLM_MODEL_SMALL = "qwen2.5vl:3b"
+$env:VLM_MODEL_BIG   = "qwen2.5vl:7b"
+
+cd ../benchmarks
+npm run build
+node run.mjs                      # sanitizer P/R + zero-leak + latency
+node aggregate.mjs                # merge into results/dashboard.json</code></pre>
+        </div>
+        <p>The latency budget model, the perception failure-path audit, and the HITL test matrix live in <code>docs/</code>. If a number in this article disagrees with the repo, the repo wins.</p>
+
+        <h2 id="takeaways">Takeaways</h2>
+        <ol>
+          <li>Privacy in an agent system is an <strong>ordering constraint</strong>, not a feature. Sanitize before the model is allowed to look.</li>
+          <li>A gate users can <em>watch</em> — flash PASS/BLOCKED every step — changes what "trust" means. Trust becomes verification.</li>
+          <li>On-device perception is not just a privacy cost center; the same inference that protects the screen also routes the model and caches the page.</li>
+          <li>Publish your defects. The defect table is the most credible paragraph on the repo.</li>
+        </ol>
+
+        <div class="article-end">
+          <h2 id="references">References</h2>
+          <ul class="ref-list">
+            <li>PRIVYSE repository — <a href="https://github.com/The-Infernix/PRIVYSE" target="_blank" rel="noopener noreferrer">github.com/The-Infernix/PRIVYSE</a> (benchmarks, docs, defect table)</li>
+            <li>SIH 26171 track brief — On-device Visual Perception for Lightweight Browser Agents</li>
+            <li><code>docs/perception-failure-path-audit.md</code> — all nine gate failure paths</li>
+            <li><code>docs/hitl-test-matrix.md</code> — the audit that found D1 and D2</li>
+            <li><code>docs/latency-budget-judge-gpu.md</code> — the p50 &lt; 5 s/step target model</li>
+          </ul>
+
+          <h2 id="related">Related reading</h2>
+          <div class="related-grid">
+            <a class="related-card" href="./voice-rag-speech-to-grounded-answers.html">
+              <span class="rc-cat">RAG · ML Systems</span>
+              <span class="rc-title">Inside VOICE-RAG: From Speech to Grounded Answers</span>
+            </a>
+            <a class="related-card" href="./debugging-browser-ml-inference-onnx.html">
+              <span class="rc-cat">ML Systems · Draft</span>
+              <span class="rc-title">Debugging Browser-Based ML Inference: Lessons from ONNX Runtime Web</span>
+            </a>
+            <a class="related-card" href="../../#work">
+              <span class="rc-cat">Portfolio</span>
+              <span class="rc-title">All projects — PRIVYSE, VOICE-RAG, SourceTrail, Viora</span>
+            </a>
+          </div>
+        </div>
+      </article>
+    </div>
+  </main>
+
+  <footer class="site-footer section-wrap">
+    <a class="brand footer-brand" href="../../" aria-label="Back to portfolio home">
+      <svg class="brand-logo" viewBox="0 0 36 36" width="28" height="28" aria-hidden="true" focusable="false">
+        <rect x="1" y="1" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1" opacity=".55"/>
+        <path d="M11 9h13v4h-8v3h7v4h-7v7h-5z" fill="currentColor"/>
+        <rect x="24" y="23" width="5" height="5" fill="#ff9f2e"/>
+      </svg>
+      <span class="brand-name">INFERNIX<span class="brand-cursor" aria-hidden="true">_</span></span>
+    </a>
+    <span>© <span id="year">2026</span> Pavan Ganesh Indupudi (Pavan Indupudi)</span>
+    <span class="footer-system">ENGINEERING JOURNAL · v1.0</span>
+    <span class="footer-note">DESIGNED TO KEEP BUILDING <span class="accent" aria-hidden="true">✳</span></span>
+  </footer>
+
+  <script src="../../script.js" defer></script>
+  <script src="../blog.js" defer></script>
+</body>
+</html>

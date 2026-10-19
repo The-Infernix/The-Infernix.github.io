@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="250" viewBox="0 0 820 250" role="img" aria-label="Viora: on-device app usage tracking with escalating gentle interventions">
+  <title>Viora — on-device digital wellbeing</title>
+  <defs>
+    <linearGradient id="page" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#141414"/>
+      <stop offset="55%" stop-color="#1a1526"/>
+      <stop offset="100%" stop-color="#12202e"/>
+    </linearGradient>
+    <linearGradient id="sheen" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#C4A8FF" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#A0C4FF" stop-opacity="0.55"/>
+    </linearGradient>
+
+    <clipPath id="wipe1"><rect x="0" y="0" height="250" width="0"><animate attributeName="width" dur="14s" repeatCount="indefinite" values="0;0;210;210" keyTimes="0;0.036;0.143;1" calcMode="spline" keySplines="0 0 1 1;0.25 0.6 0.35 1;0 0 1 1"/></rect></clipPath>
+    <clipPath id="wipe2"><rect x="0" y="0" height="250" width="0"><animate attributeName="width" dur="14s" repeatCount="indefinite" values="0;0;400;400" keyTimes="0;0.114;0.243;1" calcMode="spline" keySplines="0 0 1 1;0.25 0.6 0.35 1;0 0 1 1"/></rect></clipPath>
+    <clipPath id="wipe3"><rect x="0" y="0" height="250" width="0"><animate attributeName="width" dur="14s" repeatCount="indefinite" values="0;0;412;412" keyTimes="0;0.214;0.343;1" calcMode="spline" keySplines="0 0 1 1;0.25 0.6 0.35 1;0 0 1 1"/></rect></clipPath>
+    <clipPath id="wipe4"><rect x="0" y="0" height="250" width="0"><animate attributeName="width" dur="14s" repeatCount="indefinite" values="0;0;360;360" keyTimes="0;0.314;0.443;1" calcMode="spline" keySplines="0 0 1 1;0.25 0.6 0.35 1;0 0 1 1"/></rect></clipPath>
+    <clipPath id="wipe5"><rect x="0" y="0" height="250" width="0"><animate attributeName="width" dur="14s" repeatCount="indefinite" values="0;0;372;372" keyTimes="0;0.414;0.543;1" calcMode="spline" keySplines="0 0 1 1;0.25 0.6 0.35 1;0 0 1 1"/></rect></clipPath>
+  </defs>
+
+  <rect width="820" height="250" rx="18" fill="url(#page)"/>
+  <rect x="0" y="0" width="820" height="250" rx="18" fill="none" stroke="#2A2A2A" stroke-width="1.5"/>
+
+  <!-- title bar -->
+  <path d="M0 18a18 18 0 0 1 18-18h784a18 18 0 0 1 18 18v24H0z" fill="#1E1E1E"/>
+  <line x1="0" y1="42" x2="820" y2="42" stroke="#2A2A2A" stroke-width="1"/>
+  <circle cx="30" cy="21" r="5.5" fill="#FF5F57"/>
+  <circle cx="50" cy="21" r="5.5" fill="#FEBC2E"/>
+  <circle cx="70" cy="21" r="5.5" fill="#28C840"/>
+  <text x="410" y="26" font-family="'JetBrains Mono','Fira Code',Menlo,Consolas,monospace" font-size="12.5" fill="#9E9E9E" text-anchor="middle">viora — zsh</text>
+
+  <g font-family="'JetBrains Mono','Fira Code',Menlo,Consolas,monospace" font-size="15">
+    <g opacity="0">
+      <animate attributeName="opacity" dur="14s" repeatCount="indefinite" values="0;0;1;1;1;0" keyTimes="0;0.02;0.06;0.86;0.94;1"/>
+      <g clip-path="url(#wipe1)">
+        <text x="28" y="82"><tspan fill="#C4A8FF">❯</tspan><tspan fill="#E8E8E8"> viora init</tspan></text>
+      </g>
+      <g clip-path="url(#wipe2)">
+        <text x="46" y="116"><tspan fill="#7ECBA1">✔</tspan><tspan fill="#E8E8E8"> app usage tracked </tspan><tspan fill="#6B6B6B">— on-device only</tspan></text>
+      </g>
+      <g clip-path="url(#wipe3)">
+        <text x="46" y="150"><tspan fill="#7ECBA1">✔</tspan><tspan fill="#E8E8E8"> interventions escalate gently</tspan></text>
+      </g>
+      <g clip-path="url(#wipe4)">
+        <text x="46" y="184"><tspan fill="#7ECBA1">✔</tspan><tspan fill="#E8E8E8"> mindful unlock prompts on wake</tspan></text>
+      </g>
+      <g clip-path="url(#wipe5)">
+        <text x="46" y="218"><tspan fill="#7ECBA1">✔</tspan><tspan fill="#E8E8E8"> your data never leaves this phone</tspan></text>
+      </g>
+      <rect x="28" y="208" width="9" height="17" fill="url(#sheen)">
+        <animate attributeName="opacity" dur="1.05s" repeatCount="indefinite" values="1;1;0;0" keyTimes="0;0.5;0.51;1"/>
+      </rect>
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,80 @@
+# Infernix — Personal Developer Portfolio
+
+A static, responsive portfolio for **Pavan Ganesh Indupudi (Infernix)**, designed for GitHub Pages and search-engine discoverability.
+
+## Included
+
+- Art-directed "AI research lab" design: warm-amber/cyan palette on deep graphite, SVG orbit hero, scanline/noise texture
+- Self-hosted variable fonts (Space Grotesk, Inter, JetBrains Mono) — no external font requests
+- Featured PRIVYSE project block, differentiated project grid, and datasheet-style skill/recognition sections
+- Real repository screenshots and architecture diagrams in `assets/projects/` (all sourced from the linked repos)
+- Scroll progress bar, sticky header, scroll-triggered reveals, and terminal typewriter — all respecting `prefers-reduced-motion`
+- SEO title, description, canonical URL, Open Graph and Twitter metadata
+- `Person` JSON-LD structured data
+- `robots.txt` and `sitemap.xml`
+- SVG favicon and social preview
+- Accessible skip link, keyboard focus states, reduced-motion support
+- `/blog/` — the Infernix Engineering Journal: static article pages with category filtering, search, TOC, code copy buttons, and Article structured data
+- No build step or third-party JavaScript dependencies
+
+## 1. Create the GitHub Pages repository
+
+1. Sign in to GitHub as `The-Infernix`.
+2. Create a **public** repository named exactly `The-Infernix.github.io`.
+3. Upload the contents of this folder to the repository root (not the enclosing folder).
+4. In **Settings → Pages**, select **Deploy from a branch**, branch `main`, folder `/ (root)`, then save.
+5. Wait for the deployment to finish. Expected site URL: `https://the-infernix.github.io/`.
+
+> GitHub Pages user sites require the repository name to match the account's username plus `.github.io`. If GitHub shows a different username in your profile URL, rename the repository and update every canonical URL in `index.html`, `robots.txt`, and `sitemap.xml` to match the actual site URL.
+
+## 2. Windows setup (optional local preview)
+
+You can edit files with VS Code. For a local server, install Python 3 and run PowerShell in this folder:
+
+```powershell
+py -m http.server 8000
+```
+
+Open `http://localhost:8000/`. Press `Ctrl+C` in PowerShell to stop the server.
+
+## 3. Connect Google Search Console
+
+1. Open https://search.google.com/search-console/
+2. Add a **URL-prefix property** for `https://the-infernix.github.io/`.
+3. Verify ownership using the method Google offers for your GitHub Pages setup.
+4. Use **URL Inspection** on the homepage and select **Request indexing**.
+5. Submit `https://the-infernix.github.io/sitemap.xml` in the Sitemaps section.
+
+Indexing and rankings are not guaranteed and may take time.
+
+## 4. Personalize before launch
+
+Before launch, verify the following:
+
+- LinkedIn is set to `https://www.linkedin.com/in/pavan-indupudi-a38759334` in `script.js` and the `sameAs` array in `index.html`. Confirm this is the correct profile URL before launch.
+- Review all project summaries and technology names; keep only details you can substantiate.
+- Add a real, optimized profile photo if desired. Update `image` in the JSON-LD to a publicly accessible image URL.
+- Confirm the GitHub Pages URL and update canonical/Open Graph URLs, `robots.txt`, and `sitemap.xml` if it differs.
+- Consider adding a résumé PDF and project demo links after verifying that each URL works.
+
+## 4b. Unify your GitHub identity (manual)
+
+Google connects your profiles when they clearly name the same person:
+
+1. On GitHub, set your profile **name** field to `Pavan Ganesh Indupudi`.
+2. Edit your profile README repo (`The-Infernix/The-Infernix`) so it states your full name, that you are known as Infernix (and as Pavan Indupudi), and links to your portfolio and LinkedIn.
+3. Keep your LinkedIn headline and bio using the same full name form.
+
+## 5. SEO maintenance checklist
+
+- Write your name consistently as **Pavan Ganesh Indupudi**, with **Pavan Indupudi** as the recognized short form (both appear on the site and in the JSON-LD `alternateName`).
+- Link GitHub, LinkedIn, and this site to one another.
+- Add useful project pages or articles rather than publishing thin pages just for keywords.
+- Keep your homepage crawlable and public; do not block it with login requirements.
+- Check Search Console for indexing issues and search queries after Google has collected data.
+- Do not create fake profiles, fake awards, or misleading structured data.
+
+## Notes
+
+- This is a static site; there is no backend, analytics, or contact form.
+- A Google Knowledge Panel is not guaranteed. This site is a foundation for a consistent, verifiable online identity.

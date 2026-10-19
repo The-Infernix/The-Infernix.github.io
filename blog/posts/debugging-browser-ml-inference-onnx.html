@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#090b0f">
+  <meta name="color-scheme" content="dark">
+  <title>Debugging Browser-Based ML Inference: Lessons from ONNX Runtime Web (Draft) | Infernix Engineering Journal</title>
+  <meta name="description" content="Draft article: running MobileViT on ONNX Runtime Web inside a browser extension — WebGPU-first with WASM fallback, and the debugging lessons still being verified.">
+  <meta name="author" content="Pavan Ganesh Indupudi">
+  <meta name="robots" content="noindex, follow">
+  <link rel="canonical" href="https://the-infernix.github.io/blog/posts/debugging-browser-ml-inference-onnx.html">
+  <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../styles.css">
+  <link rel="stylesheet" href="../blog.css">
+  <link rel="preload" href="../../assets/fonts/space-grotesk-var.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="../../assets/fonts/inter-var.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="../../assets/fonts/jetbrains-mono-var.woff2" as="font" type="font/woff2" crossorigin>
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Infernix">
+  <meta property="og:title" content="Debugging Browser-Based ML Inference: Lessons from ONNX Runtime Web (Draft)">
+  <meta property="og:description" content="Running MobileViT on ONNX Runtime Web inside a browser extension — WebGPU-first with WASM fallback, and the debugging lessons still being verified.">
+  <meta property="og:url" content="https://the-infernix.github.io/blog/posts/debugging-browser-ml-inference-onnx.html">
+  <meta property="og:image" content="https://the-infernix.github.io/assets/social-preview.svg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Debugging Browser-Based ML Inference: Lessons from ONNX Runtime Web (Draft)">
+  <meta name="twitter:description" content="Running MobileViT on ONNX Runtime Web inside a browser extension — WebGPU-first with WASM fallback, and the debugging lessons still being verified.">
+  <meta name="twitter:image" content="https://the-infernix.github.io/assets/social-preview.svg">
+  <script>document.documentElement.classList.add("js");</script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "Debugging Browser-Based ML Inference: Lessons from ONNX Runtime Web",
+    "description": "Draft: running MobileViT on ONNX Runtime Web inside a browser extension — WebGPU-first with WASM fallback, and the debugging lessons still being verified.",
+    "datePublished": "2026-10-19",
+    "dateModified": "2026-10-19",
+    "author": {
+      "@type": "Person",
+      "name": "Pavan Ganesh Indupudi",
+      "alternateName": ["Infernix", "Pavan Indupudi"],
+      "url": "https://the-infernix.github.io/"
+    },
+    "publisher": { "@id": "https://the-infernix.github.io/#person" },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://the-infernix.github.io/blog/posts/debugging-browser-ml-inference-onnx.html"
+    },
+    "image": "https://the-infernix.github.io/assets/social-preview.svg",
+    "keywords": ["ONNX Runtime Web", "WebGPU", "browser ML", "debugging", "draft"]
+  }
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div class="scanlines" aria-hidden="true"></div>
+
+  <header class="site-header" id="site-header">
+    <div class="header-inner">
+      <a class="brand" href="../../" aria-label="Infernix home — Pavan Ganesh Indupudi">
+        <svg class="brand-logo" viewBox="0 0 36 36" width="36" height="36" aria-hidden="true" focusable="false">
+          <rect x="1" y="1" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1" opacity=".55"/>
+          <path d="M11 9h13v4h-8v3h7v4h-7v7h-5z" fill="currentColor"/>
+          <rect x="24" y="23" width="5" height="5" fill="#ff9f2e"/>
+          <path d="M4 4h4M4 4v4M32 32h-4M32 32v-4" stroke="#ff9f2e" stroke-width="1.5" fill="none"/>
+        </svg>
+        <span class="brand-name">INFERNIX<span class="brand-cursor" aria-hidden="true">_</span></span>
+      </a>
+      <button class="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="site-nav">
+        <span class="menu-bar" aria-hidden="true"></span>
+        <span class="menu-bar" aria-hidden="true"></span>
+      </button>
+      <nav id="site-nav" class="site-nav" aria-label="Main navigation">
+        <a href="../../#about">ABOUT</a>
+        <a href="../../#work">PROJECTS</a>
+        <a href="../../#recognition">RECOGNITION</a>
+        <a href="../../#stack">STACK</a>
+        <a href="../" aria-current="page">JOURNAL</a>
+        <a href="../../#contact" class="nav-contact">CONTACT <span aria-hidden="true">↗</span></a>
+      </nav>
+    </div>
+    <div class="scroll-progress" id="scroll-progress" aria-hidden="true"></div>
+  </header>
+
+  <main id="main">
+    <header class="article-header article-wrap">
+      <a class="back-link" href="../"><span aria-hidden="true">←</span> Engineering Journal</a>
+      <div class="card-cats">
+        <span class="cat-tag">ML Systems</span>
+        <span class="cat-tag draft">DRAFT</span>
+      </div>
+      <h1>Debugging Browser-Based ML Inference: Lessons from ONNX Runtime Web</h1>
+      <p class="article-subtitle">Running MobileViT inside a browser extension means WebGPU when you can get it, WASM when you can't, and failure modes that only exist at the intersection.</p>
+      <div class="article-byline">
+        <span><strong>Pavan Ganesh Indupudi</strong> (Infernix)</span>
+        <span>Published 2026-10-19</span>
+        <span>Draft — incomplete</span>
+        <span>6 min read</span>
+      </div>
+      <div class="draft-banner">
+        <strong>This article is a draft.</strong> The verified background sections below come from the PRIVYSE repository's documented design. The debugging sections are marked <strong>TODO</strong> — the specific failure stories, error messages, and fixes have not been verified against notes or logs yet and will not be published as facts until they are.
+      </div>
+    </header>
+
+    <div class="article-wrap article-layout">
+      <nav class="toc" id="toc" aria-label="Table of contents">
+        <p class="toc-label">CONTENTS</p>
+        <ol></ol>
+      </nav>
+
+      <article class="prose">
+        <p>PRIVYSE runs a quantized MobileViT-Small inside the browser — not on a server, not in a worker talking to a GPU daemon, but through ONNX Runtime Web in the extension itself. The model classifies screenshot tiles so the privacy pipeline knows which regions need Tier C protection. This article is meant to collect the debugging lessons from making that reliable. The setup is verified; the war stories are still being checked against notes, so they are stubs for now.</p>
+
+        <h2 id="setup">The setup (verified)</h2>
+        <p>What is documented in the PRIVYSE repo and can be stated as fact:</p>
+        <ul>
+          <li><strong>Model:</strong> MobileViT-Small, quantized to q8 ONNX, 6.3 MB, bundled in the extension (<code>extension/public/models/</code>) — no CDN downloads, ever.</li>
+          <li><strong>Runtime:</strong> ONNX Runtime Web with the <strong>WebGPU execution provider first</strong>. When <code>navigator.gpu</code> is present, tiles classify on the GPU; any op the WebGPU EP lacks falls through to the bundled WASM EP. The same <code>.jsep</code> runtime serves both paths, so nothing is re-downloaded on fallback.</li>
+          <li><strong>Host context:</strong> Chrome MV3 service workers have no DOM, so the vision stack (MobileViT + BlazeFace + Tesseract.js) runs in a hidden <strong>offscreen document</strong>. Firefox MV2 has neither the offscreen API nor the side panel API — the <strong>background page</strong> is the DOM host, sharing the same <code>core/vision-host.ts</code>.</li>
+          <li><strong>Visibility:</strong> the active provider is surfaced live in the side panel resource meter (<code>perception · ⚡ WebGPU</code> / <code>wasm</code>), and reported in perception stats alongside tile tags.</li>
+          <li><strong>Caching:</strong> a pixel-hash LRU reuses the tile map when the page has not visually changed — cached perception ≈ 0 ms vs ≈ 1.4 s first run. Faces, OCR, and the privacy gate still run fresh every step.</li>
+          <li><strong>Measured accuracy:</strong> ViT page classification 7/7 on the labeled benchmark, photo-vs-blank 100%.</li>
+        </ul>
+
+        <div class="code-block">
+          <span class="code-lang">javascript — provider selection as documented (illustrative shape)</span>
+          <pre><code>// WebGPU first, WASM fallback — same bundled .jsep runtime
+const hasWebGPU = typeof navigator !== "undefined" &amp;&amp; !!navigator.gpu;
+const providers = hasWebGPU ? ["webgpu", "wasm"] : ["wasm"];
+// active provider is reported to the side-panel resource meter</code></pre>
+        </div>
+
+        <div class="callout tradeoff">
+          <span class="callout-label">Note on the snippet above</span>
+          <p>This code block illustrates the <em>documented behavior</em> (WebGPU-first with WASM fallback, provider reported to the UI). It is not copied from the source tree. The verified implementation lives in <code>extension/core/perception.ts</code> in the PRIVYSE repo.</p>
+        </div>
+
+        <h2 id="failure-modes">Failure modes worth writing up (TODO)</h2>
+        <p>The following debugging sessions happened while building the perception stack. Each one needs its notes re-checked before it can be written as fact:</p>
+
+        <div class="callout failure">
+          <span class="callout-label">TODO — WebGPU init failures in offscreen documents</span>
+          <p>Notes exist on at least one environment where <code>navigator.gpu</code> was present but WebGPU device requests failed inside the MV3 offscreen document, silently dropping to WASM with a latency jump. <strong>To verify:</strong> exact browser version, the error surfaced, whether <code>requestAdapter()</code> returned null, and the fallback log line. Do not publish until the console capture is recovered.</p>
+        </div>
+
+        <div class="callout failure">
+          <span class="callout-label">TODO — unsupported ops forcing partial WASM execution</span>
+          <p>Some MobileViT ops were expected to miss the WebGPU EP and fall through. <strong>To verify:</strong> which ops, whether ORT logged partition boundaries, and the measured GPU-vs-WASM tile-classification latency delta on the same page.</p>
+        </div>
+
+        <div class="callout failure">
+          <span class="callout-label">TODO — WASM memory growth across long agent runs</span>
+          <p>Long-running sessions appeared to accumulate memory in the WASM heap. <strong>To verify:</strong> whether session reuse or per-step session creation was the cause, the observed growth curve, and what the current code does (release vs reuse).</p>
+        </div>
+
+        <div class="callout failure">
+          <span class="callout-label">TODO — pixel-hash cache false hits</span>
+          <p>The same-page cache keys on a pixel hash; dynamic pages (clocks, spinners) were expected to thrash it, and near-identical frames to false-hit it. <strong>To verify:</strong> whether any false hit was actually observed in benchmarks, the hash scheme, and the eviction policy in the LRU.</p>
+        </div>
+
+        <h2 id="debugging-playbook">Debugging playbook (TODO — outline only)</h2>
+        <p>The shape of the playbook this article will end with, pending verification:</p>
+        <ol>
+          <li>Always log the active execution provider per step — silent fallback is the root cause of most "it got slow" reports.</li>
+          <li>Keep a WASM-only baseline measurement per machine; compare, don't assume.</li>
+          <li>Test the offscreen-document path and the Firefox background-page path separately; they fail differently.</li>
+          <li>Treat cache hits as untrusted until the hash scheme is re-read — measure first-run vs cached latencies in CI-style runs.</li>
+        </ol>
+
+        <h2 id="takeaways">Takeaways (provisional)</h2>
+        <p>Two things are already safe to claim because they are documented and benchmarked, not anecdotal:</p>
+        <ol>
+          <li><strong>Surface the execution provider in the UI.</strong> Making WebGPU/WASM visible in the resource meter turned "why is it slow?" from a mystery into a screenshot.</li>
+          <li><strong>Bundle both runtimes.</strong> Shipping the <code>.jsep</code> build with WASM fallback inside the extension means first-run latency never depends on a CDN, and fallback never depends on a network fetch.</li>
+        </ol>
+
+        <div class="article-end">
+          <h2 id="references">References</h2>
+          <ul class="ref-list">
+            <li>PRIVYSE repository — <a href="https://github.com/The-Infernix/PRIVYSE" target="_blank" rel="noopener noreferrer">github.com/The-Infernix/PRIVYSE</a></li>
+            <li><code>extension/core/perception.ts</code> — WebGPU-first ORT session setup</li>
+            <li><code>extension/core/vision-host.ts</code> — shared Chrome-offscreen / Firefox-background host</li>
+            <li><code>docs/perception-failure-path-audit.md</code> — the perception failure-path audit</li>
+            <li>Companion article: <a href="./privyse-privacy-first-browser-agent.html">Building PRIVYSE: Designing a Privacy-First Browser Agent</a></li>
+          </ul>
+
+          <h2 id="related">Related reading</h2>
+          <div class="related-grid">
+            <a class="related-card" href="./privyse-privacy-first-browser-agent.html">
+              <span class="rc-cat">AI Agents · Privacy Engineering</span>
+              <span class="rc-title">Building PRIVYSE: Designing a Privacy-First Browser Agent</span>
+            </a>
+            <a class="related-card" href="./voice-rag-speech-to-grounded-answers.html">
+              <span class="rc-cat">RAG · ML Systems</span>
+              <span class="rc-title">Inside VOICE-RAG: From Speech to Grounded Answers</span>
+            </a>
+            <a class="related-card" href="../../#work">
+              <span class="rc-cat">Portfolio</span>
+              <span class="rc-title">All projects — PRIVYSE, VOICE-RAG, SourceTrail, Viora</span>
+            </a>
+          </div>
+        </div>
+      </article>
+    </div>
+  </main>
+
+  <footer class="site-footer section-wrap">
+    <a class="brand footer-brand" href="../../" aria-label="Back to portfolio home">
+      <svg class="brand-logo" viewBox="0 0 36 36" width="28" height="28" aria-hidden="true" focusable="false">
+        <rect x="1" y="1" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1" opacity=".55"/>
+        <path d="M11 9h13v4h-8v3h7v4h-7v7h-5z" fill="currentColor"/>
+        <rect x="24" y="23" width="5" height="5" fill="#ff9f2e"/>
+      </svg>
+      <span class="brand-name">INFERNIX<span class="brand-cursor" aria-hidden="true">_</span></span>
+    </a>
+    <span>© <span id="year">2026</span> Pavan Ganesh Indupudi (Pavan Indupudi)</span>
+    <span class="footer-system">ENGINEERING JOURNAL · v1.0</span>
+    <span class="footer-note">DESIGNED TO KEEP BUILDING <span class="accent" aria-hidden="true">✳</span></span>
+  </footer>
+
+  <script src="../../script.js" defer></script>
+  <script src="../blog.js" defer></script>
+</body>
+</html>
