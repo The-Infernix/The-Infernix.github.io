@@ -52,6 +52,7 @@ Indexing and rankings are not guaranteed and may take time.
 Before launch, verify the following:
 
 - LinkedIn is set to `https://www.linkedin.com/in/pavan-indupudi-a38759334` in `script.js` and the `sameAs` array in `index.html`. Confirm this is the correct profile URL before launch.
+- The `sameAs` arrays in `index.html` and `blog/index.html` also list `https://dev.to/the_infernix` and `https://infernix.hashnode.dev`. If either handle changes, update both arrays.
 - Review all project summaries and technology names; keep only details you can substantiate.
 - Add a real, optimized profile photo if desired. Update `image` in the JSON-LD to a publicly accessible image URL.
 - Confirm the GitHub Pages URL and update canonical/Open Graph URLs, `robots.txt`, and `sitemap.xml` if it differs.
