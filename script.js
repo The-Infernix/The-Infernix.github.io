@@ -10,7 +10,7 @@
   const progressBar = document.querySelector("#scroll-progress");
 
   // Keep in sync with the LinkedIn URL in index.html (contact link + JSON-LD sameAs).
-  const LINKEDIN_URL = "https://www.linkedin.com/in/pavan-indupudi-a38759334";
+  const LINKEDIN_URL = "https://www.linkedin.com/in/pavanindupudi";
 
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 

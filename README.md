@@ -51,7 +51,7 @@ Indexing and rankings are not guaranteed and may take time.
 
 Before launch, verify the following:
 
-- LinkedIn is set to `https://www.linkedin.com/in/pavan-indupudi-a38759334` in `script.js` and the `sameAs` array in `index.html`. Confirm this is the correct profile URL before launch.
+- LinkedIn is set to `https://www.linkedin.com/in/pavanindupudi` in `script.js` and in the `sameAs` arrays in `index.html` and `blog/index.html`. This vanity slug only resolves once the public profile URL is actually changed on LinkedIn — if LinkedIn assigns a different one, update all three files.
 - The `sameAs` arrays in `index.html` and `blog/index.html` also list `https://dev.to/the_infernix` and `https://infernix.hashnode.dev`. If either handle changes, update both arrays.
 - Review all project summaries and technology names; keep only details you can substantiate.
 - Add a real, optimized profile photo if desired. Update `image` in the JSON-LD to a publicly accessible image URL.
