@@ -12,7 +12,7 @@ A static, responsive portfolio for **Pavan Ganesh Indupudi (Infernix)**, designe
 - SEO title, description, canonical URL, Open Graph and Twitter metadata
 - `Person` JSON-LD structured data
 - `robots.txt` and `sitemap.xml`
-- SVG favicon and social preview
+- SVG favicon, plus a 1200×630 PNG social preview (generated from `assets/social-preview.svg`) for Open Graph and Twitter cards
 - Accessible skip link, keyboard focus states, reduced-motion support
 - `/blog/` — the Infernix Engineering Journal: static article pages with category filtering, search, TOC, code copy buttons, and Article structured data
 - No build step or third-party JavaScript dependencies
@@ -74,6 +74,21 @@ Google connects your profiles when they clearly name the same person:
 - Keep your homepage crawlable and public; do not block it with login requirements.
 - Check Search Console for indexing issues and search queries after Google has collected data.
 - Do not create fake profiles, fake awards, or misleading structured data.
+
+## 6. Regenerating the social preview image
+
+`assets/social-preview.svg` is the editable source; `assets/social-preview.png` is the file every page actually points at. The PNG exists because LinkedIn, Twitter/X, Facebook, WhatsApp, Slack, and Discord do not render SVG in link previews — LinkedIn's own guidance lists JPG, PNG, and GIF only, so an SVG `og:image` yields a blank card.
+
+After editing the SVG, re-render the PNG (requires Google Chrome; no other dependencies):
+
+```powershell
+$svg = Get-Content .\assets\social-preview.svg -Raw
+$wrap = "<!doctype html><html><head><meta charset='utf-8'><style>html,body{margin:0;padding:0;background:#090b0f;width:1200px;height:630px;overflow:hidden}svg{display:block}</style></head><body>$svg</body></html>"
+Set-Content -Path "$env:TEMP\og-wrap.html" -Value $wrap -Encoding utf8
+& "C:\Program Files\Google\Chrome\Application\chrome.exe" --headless --disable-gpu --hide-scrollbars --force-device-scale-factor=1 --window-size=1200,630 --screenshot="$PWD\assets\social-preview.png" --user-data-dir="$env:TEMP\og-cdp" "file:///$($env:TEMP -replace '\\','/')/og-wrap.html"
+```
+
+Then confirm the output is 1200×630 and under 5 MB, and that the `og:image` tags in `index.html`, `blog/index.html`, and each `blog/posts/*.html` still point at the PNG.
 
 ## Notes
 
