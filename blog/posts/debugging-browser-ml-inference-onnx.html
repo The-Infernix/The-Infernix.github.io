@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#090b0f">
   <meta name="color-scheme" content="dark">
-  <title>Debugging Browser-Based ML Inference: Lessons from ONNX Runtime Web (Draft) | Infernix Engineering Journal</title>
-  <meta name="description" content="Draft article: running MobileViT on ONNX Runtime Web inside a browser extension — WebGPU-first with WASM fallback, and the debugging lessons still being verified.">
+  <title>Debugging Browser-Based ML Inference: Lessons from ONNX Runtime Web | Infernix Engineering Journal</title>
+  <meta name="description" content="Running MobileViT inside a browser extension: a WebGPU-first ONNX Runtime Web pipeline, a batched-input bug that silently corrupted every tile it touched, and what it took to make the failure path provable instead of hopeful.">
   <meta name="author" content="Pavan Ganesh Indupudi">
-  <meta name="robots" content="noindex, follow">
+  <meta name="robots" content="index, follow, max-image-preview:large">
   <link rel="canonical" href="https://the-infernix.github.io/blog/posts/debugging-browser-ml-inference-onnx.html">
   <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="../../styles.css">
@@ -18,13 +18,13 @@
   <link rel="preload" href="../../assets/fonts/jetbrains-mono-var.woff2" as="font" type="font/woff2" crossorigin>
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="Infernix">
-  <meta property="og:title" content="Debugging Browser-Based ML Inference: Lessons from ONNX Runtime Web (Draft)">
-  <meta property="og:description" content="Running MobileViT on ONNX Runtime Web inside a browser extension — WebGPU-first with WASM fallback, and the debugging lessons still being verified.">
+  <meta property="og:title" content="Debugging Browser-Based ML Inference: Lessons from ONNX Runtime Web">
+  <meta property="og:description" content="Running MobileViT inside a browser extension: a WebGPU-first ONNX Runtime Web pipeline, a batched-input bug that silently corrupted every tile it touched, and what it took to make the failure path provable instead of hopeful.">
   <meta property="og:url" content="https://the-infernix.github.io/blog/posts/debugging-browser-ml-inference-onnx.html">
   <meta property="og:image" content="https://the-infernix.github.io/assets/social-preview.svg">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Debugging Browser-Based ML Inference: Lessons from ONNX Runtime Web (Draft)">
-  <meta name="twitter:description" content="Running MobileViT on ONNX Runtime Web inside a browser extension — WebGPU-first with WASM fallback, and the debugging lessons still being verified.">
+  <meta name="twitter:title" content="Debugging Browser-Based ML Inference: Lessons from ONNX Runtime Web">
+  <meta name="twitter:description" content="Running MobileViT inside a browser extension: a WebGPU-first ONNX Runtime Web pipeline, a batched-input bug that silently corrupted every tile it touched, and what it took to make the failure path provable instead of hopeful.">
   <meta name="twitter:image" content="https://the-infernix.github.io/assets/social-preview.svg">
   <script>document.documentElement.classList.add("js");</script>
   <script type="application/ld+json">
@@ -32,9 +32,9 @@
     "@context": "https://schema.org",
     "@type": "BlogPosting",
     "headline": "Debugging Browser-Based ML Inference: Lessons from ONNX Runtime Web",
-    "description": "Draft: running MobileViT on ONNX Runtime Web inside a browser extension — WebGPU-first with WASM fallback, and the debugging lessons still being verified.",
-    "datePublished": "2026-10-19",
-    "dateModified": "2026-10-19",
+    "description": "Running MobileViT inside a browser extension: a WebGPU-first ONNX Runtime Web pipeline, a batched-input bug that silently corrupted every tile it touched, and what it took to make the failure path provable instead of hopeful.",
+    "datePublished": "2026-10-21",
+    "dateModified": "2026-10-21",
     "author": {
       "@type": "Person",
       "name": "Pavan Ganesh Indupudi",
@@ -47,7 +47,7 @@
       "@id": "https://the-infernix.github.io/blog/posts/debugging-browser-ml-inference-onnx.html"
     },
     "image": "https://the-infernix.github.io/assets/social-preview.svg",
-    "keywords": ["ONNX Runtime Web", "WebGPU", "browser ML", "debugging", "draft"]
+    "keywords": ["ONNX Runtime Web", "WebGPU", "browser ML", "MobileViT", "debugging", "failure paths"]
   }
   </script>
 </head>
@@ -87,18 +87,14 @@
       <a class="back-link" href="../"><span aria-hidden="true">←</span> Engineering Journal</a>
       <div class="card-cats">
         <span class="cat-tag">ML Systems</span>
-        <span class="cat-tag draft">DRAFT</span>
+        <span class="cat-tag">Privacy Engineering</span>
       </div>
       <h1>Debugging Browser-Based ML Inference: Lessons from ONNX Runtime Web</h1>
-      <p class="article-subtitle">Running MobileViT inside a browser extension means WebGPU when you can get it, WASM when you can't, and failure modes that only exist at the intersection.</p>
+      <p class="article-subtitle">Running MobileViT inside a browser extension means WebGPU when you can get it, WASM when you can't, and failure modes that only exist at the intersection. This is what broke, what the breakage looked like from the outside, and how it was pinned down.</p>
       <div class="article-byline">
         <span><strong>Pavan Ganesh Indupudi</strong> (Infernix)</span>
-        <span>Published 2026-10-19</span>
-        <span>Draft — incomplete</span>
-        <span>6 min read</span>
-      </div>
-      <div class="draft-banner">
-        <strong>This article is a draft.</strong> The verified background sections below come from the PRIVYSE repository's documented design. The debugging sections are marked <strong>TODO</strong> — the specific failure stories, error messages, and fixes have not been verified against notes or logs yet and will not be published as facts until they are.
+        <span>Published 2026-10-21</span>
+        <span>13 min read</span>
       </div>
     </header>
 
@@ -109,78 +105,280 @@
       </nav>
 
       <article class="prose">
-        <p>PRIVYSE runs a quantized MobileViT-Small inside the browser — not on a server, not in a worker talking to a GPU daemon, but through ONNX Runtime Web in the extension itself. The model classifies screenshot tiles so the privacy pipeline knows which regions need Tier C protection. This article is meant to collect the debugging lessons from making that reliable. The setup is verified; the war stories are still being checked against notes, so they are stubs for now.</p>
+        <p>PRIVYSE runs a quantized MobileViT-Small inside the browser — not on a server, not in a worker talking to a GPU daemon, but through ONNX Runtime Web in the extension itself. The model classifies screenshot tiles so the privacy pipeline knows which regions need Tier C protection.</p>
 
-        <h2 id="setup">The setup (verified)</h2>
-        <p>What is documented in the PRIVYSE repo and can be stated as fact:</p>
+        <p>This article is about the part of that work that does not fit in a README: the failure paths. Most of them are documented in the repository's own perception failure-path audit, and two of them were genuinely surprising. One was a <strong>batched inference bug that silently corrupted every tile it touched</strong> while looking, from the outside, like a model that was merely unsure. The other was a <strong>timeout budget that let the least important pass starve the two that mattered most</strong>.</p>
+
+        <p>Both are written up here with the numbers they produced, because a failure-mode write-up that omits the magnitudes is just a list of things that went wrong.</p>
+
+        <h2 id="setup">The setup</h2>
+        <p>Everything below is taken from the PRIVYSE repository, so it can be checked line by line:</p>
         <ul>
-          <li><strong>Model:</strong> MobileViT-Small, quantized to q8 ONNX, 6.3 MB, bundled in the extension (<code>extension/public/models/</code>) — no CDN downloads, ever.</li>
-          <li><strong>Runtime:</strong> ONNX Runtime Web with the <strong>WebGPU execution provider first</strong>. When <code>navigator.gpu</code> is present, tiles classify on the GPU; any op the WebGPU EP lacks falls through to the bundled WASM EP. The same <code>.jsep</code> runtime serves both paths, so nothing is re-downloaded on fallback.</li>
+          <li><strong>Model:</strong> MobileViT-Small (ImageNet-224/256 pretrained), quantized to q8 ONNX — <code>model_quantized.onnx</code>, 6,303,767 bytes (6.3 MB), bundled under <code>extension/public/models/perception/</code>. No CDN downloads, ever.</li>
+          <li><strong>Runtime:</strong> ONNX Runtime Web with the <strong>WebGPU execution provider first</strong>. The bundled <code>ort-wasm-simd-threaded.jsep.wasm</code> (26.5 MB) is a <em>dual</em> runtime — it serves the WebGPU EP and the WASM EP from one binary — so a machine without a GPU drops to WASM without re-downloading anything. <code>numThreads = 1</code> keeps it on the main thread: no <code>SharedArrayBuffer</code>, no cross-origin isolation headers.</li>
+          <li><strong>Preprocessing:</strong> resize the tile's shortest edge to 288, center-crop 256, rescale by 1/255, normalize to [-1, 1], flip RGB → BGR — mirroring <code>MobileViTFeatureExtractor</code>.</li>
           <li><strong>Host context:</strong> Chrome MV3 service workers have no DOM, so the vision stack (MobileViT + BlazeFace + Tesseract.js) runs in a hidden <strong>offscreen document</strong>. Firefox MV2 has neither the offscreen API nor the side panel API — the <strong>background page</strong> is the DOM host, sharing the same <code>core/vision-host.ts</code>.</li>
-          <li><strong>Visibility:</strong> the active provider is surfaced live in the side panel resource meter (<code>perception · ⚡ WebGPU</code> / <code>wasm</code>), and reported in perception stats alongside tile tags.</li>
-          <li><strong>Caching:</strong> a pixel-hash LRU reuses the tile map when the page has not visually changed — cached perception ≈ 0 ms vs ≈ 1.4 s first run. Faces, OCR, and the privacy gate still run fresh every step.</li>
-          <li><strong>Measured accuracy:</strong> ViT page classification 7/7 on the labeled benchmark, photo-vs-blank 100%.</li>
+          <li><strong>Visibility:</strong> the active provider is surfaced live in the side panel resource meter (<code>perception · ⚡ WebGPU</code> / <code>wasm</code>) and reported in perception stats alongside tile tags.</li>
+          <li><strong>Caching:</strong> a pixel-hash map reuses the tile map when the page has not visually changed — cached perception reports <code>ms: 0</code> against roughly 1.2–1.6 s for a fresh ViT pass. Faces, OCR, and the privacy gate still run fresh every step.</li>
         </ul>
 
         <div class="code-block">
-          <span class="code-lang">javascript — provider selection as documented (illustrative shape)</span>
-          <pre><code>// WebGPU first, WASM fallback — same bundled .jsep runtime
-const hasWebGPU = typeof navigator !== "undefined" &amp;&amp; !!navigator.gpu;
-const providers = hasWebGPU ? ["webgpu", "wasm"] : ["wasm"];
-// active provider is reported to the side-panel resource meter</code></pre>
+          <span class="code-lang">typescript — WebGPU-first session creation, from extension/core/perception.ts</span>
+          <pre><code>if (webgpuAvailable()) {
+  try {
+    session = await createSession(ort, model, ["webgpu", "wasm"]);
+    activeBackend = "webgpu";
+    return session;
+  } catch {
+    /* EP init failure — retry on WASM (same JSEP runtime) */
+  }
+}
+session = await createSession(ort, model, ["wasm"]);
+activeBackend = "wasm";</code></pre>
         </div>
 
         <div class="callout tradeoff">
           <span class="callout-label">Note on the snippet above</span>
-          <p>This code block illustrates the <em>documented behavior</em> (WebGPU-first with WASM fallback, provider reported to the UI). It is not copied from the source tree. The verified implementation lives in <code>extension/core/perception.ts</code> in the PRIVYSE repo.</p>
+          <p>This block is copied from <code>extension/core/perception.ts</code> in the PRIVYSE repository, with the surrounding function body trimmed. The <code>["webgpu", "wasm"]</code> provider list is what lets a single session fall through individual kernels to the WASM EP; the <code>catch</code> branch is the whole-session fallback if the WebGPU EP fails to initialise at all.</p>
         </div>
 
-        <h2 id="failure-modes">Failure modes worth writing up (TODO)</h2>
-        <p>The following debugging sessions happened while building the perception stack. Each one needs its notes re-checked before it can be written as fact:</p>
+        <h2 id="batch-bug">Failure mode 1 — the batched input that corrupted every tile</h2>
+
+        <p>This is the one that should have shipped. The obvious optimisation for a vision model running on a grid of tiles is to stack them into one batched tensor and run a single inference instead of one per tile. It is faster, it is idiomatic, and it is exactly what we would have written.</p>
+
+        <p>The A/B probe told a different story. On <strong>onnxruntime-web 1.29</strong> with a WASM backend, a batched input of shape <code>[N, 3, 256, 256]</code> returned <strong>degraded logits</strong> — every tile pinned at roughly <strong>22–33% confidence</strong> and mapped to the wrong class. The same batches run through <code>onnxruntime-node</code> were <strong>bit-exact</strong>. And a <code>batch=1</code> run on the web backend matched the native reference exactly, tile by tile, in <code>benchmarks/probe-batch.mjs</code>.</p>
+
+        <p>So the bug was not in the model, the preprocessing, or the browser. It was in one runtime's batched-input path. The uncomfortable part is that it did not crash and did not look like garbage — it looked like <em>low confidence</em>.</p>
+
+        <div class="code-block">
+          <span class="code-lang">typescript — the confidence bands, from extension/core/perception.ts</span>
+          <pre><code>export function tagForClass(cls: number, conf: number): PerceptionTag {
+  if (conf &lt; 0.22) return "blank";
+  if (conf &lt; 0.5) return "uncertain";
+  return TAG_OF_CLASS[cls] ?? "photo";
+}</code></pre>
+        </div>
+
+        <p>Follow the arithmetic. A corrupted batch produces ~22–33% confidence, which lands inside the <code>uncertain</code> band. And <code>uncertain</code> is not a neutral state in this pipeline — it escalates:</p>
+
+        <div class="code-block">
+          <span class="code-lang">typescript — how an uncertain tile is handled, from extension/core/perception.ts</span>
+          <pre><code>} else if (dom.tag === "uncertain") {
+  escalate.push({
+    region,
+    tags,
+    reason: `on-device ViT: low-confidence graphic (${dom.label}) — redacted conservatively`,
+  });
+  captchaLike.push({ region, tags, reason: "possible human-verification graphic (manual step)" });
+}</code></pre>
+        </div>
 
         <div class="callout failure">
-          <span class="callout-label">TODO — WebGPU init failures in offscreen documents</span>
-          <p>Notes exist on at least one environment where <code>navigator.gpu</code> was present but WebGPU device requests failed inside the MV3 offscreen document, silently dropping to WASM with a latency jump. <strong>To verify:</strong> exact browser version, the error surfaced, whether <code>requestAdapter()</code> returned null, and the fallback log line. Do not publish until the console capture is recovered.</p>
+          <span class="callout-label">What the batch bug actually caused</span>
+          <p>Two failure directions at once, from the same corrupted tensor. Tiles that fell <em>below</em> 0.22 collapsed to <code>blank</code> — a real photograph was never escalated, which is a <strong>missed redaction</strong>. Tiles that landed in the <code>uncertain</code> band were escalated <em>and</em> flagged as <code>captchaLike</code>, which is <strong>over-redaction plus false human-verification prompts</strong> sent to a human in the loop. Neither is a crash; both are wrong in a way that only shows up as a diff in aggregate behaviour. That is what "mis-escalated regions" and "turned real photos into uncertain/blank" meant in the audit: the model's sensitivity to real imagery was destroyed in both directions at once.</p>
         </div>
+
+        <p><strong>The resolution was to give up the optimisation.</strong> Perception stays at <code>batch=1</code> per tile, documented in <code>perception.ts::classifyCanvas</code>, and <code>_abTest()</code> is retained as a <strong>regression tripwire</strong> — it runs batched and single-tile inference over the same crops on one machine so a future onnxruntime-web upgrade that re-breaks the batch path fails loudly instead of silently. The latency win that the batch was supposed to buy came from somewhere else entirely, which is the next failure mode.</p>
+
+        <div class="callout lesson">
+          <span class="callout-label">Lesson</span>
+          <p>A performance optimisation that produces <em>plausible but wrong</em> numbers is more dangerous than one that produces errors, because every downstream threshold you set will quietly calibrate itself around the corruption. When a cross-runtime A/B disagrees, believe the disagreement over your intuition about which side is "obviously right".</p>
+        </div>
+
+        <h2 id="budget-starvation">Failure mode 2 — the pass that ate the budget</h2>
+
+        <p>The original design ran perception <strong>serially</strong> inside the vision pipeline: a 15-second inner timeout for the ViT, against a <strong>shared 30-second vision budget</strong> that faces and OCR also drew from. A hung or slow MobileViT could therefore consume half the total budget, and in the worst case cause faces and OCR to be skipped.</p>
+
+        <p>That is a fail-open direction, and it is the kind that matters here: faces and OCR are the layers that perception is supposed to be <em>backstopping</em>. Letting the backstop consume the budget of the primary layers inverts the safety ordering.</p>
+
+        <p>The fix was to make the three passes genuinely independent — each individually bounded, none able to starve the others — and to change the arithmetic of the whole pipeline from a sum to a maximum:</p>
+
+        <div class="code-block">
+          <span class="code-lang">typescript — concurrent, individually-bounded passes, from extension/core/vision.ts</span>
+          <pre><code>const pass = {
+  perception: (async () =&gt; {
+    try {
+      const p = await withTimeout(
+        perceiveScreen({ imageDataUrl, imageRegions, budgetMs: 2500, maxTiles: 6, pageUrl }),
+        7000,
+        "perception-timeout",
+      );
+      out.perception = p;
+    } catch (e) {
+      stats.skipped.push("perception:" + errMsg(e));
+    }
+  })(),
+  faces:  (async () =&gt; { /* withTimeout(…, 10000, "face-timeout") */ })(),
+  ocr:    (async () =&gt; { /* withTimeout(…, 12000, "ocr-timeout")  */ })(),
+};
+
+await Promise.all([statsMB, pass.perception, pass.faces, pass.ocr]);</code></pre>
+        </div>
+
+        <p>Wall-clock vision latency is now <code>max(perception, faces, OCR)</code> instead of their sum, the ViT's inner timeout dropped from 15 s to <strong>7 s</strong>, and a failure in any single pass is recorded in <code>stats.skipped</code> while the others complete untouched. Perception is best-effort by construction: it never blocks, never runs first, and its escalation decisions are purely <em>additive</em> to the sanitizer's redaction set.</p>
+
+        <div class="callout decision">
+          <span class="callout-label">Design decision</span>
+          <p>Escalation is additive, never subtractive. A missed perception decision means fewer redactions, but every other layer — DOM sweep, tokenizer, OCR, face detection, zero-leak gate — remains fully in force. That is what turns "perception failed" from a privacy incident into a performance event. Every row in the failure catalogue below inherits this property, and it is the reason the audit's verdict could be "no fail-open leak path" rather than "no fail-open path found so far".</p>
+        </div>
+
+        <h2 id="provider-badge">Failure mode 3 — the provider badge is a session label, not a measurement</h2>
+
+        <p>The side panel shows <code>perception · ⚡ WebGPU</code> or <code>perception · wasm</code>. It is a genuinely useful diagnostic, and it is also slightly less than it appears to be. Three details from the source are worth stating plainly.</p>
+
+        <p><strong>Detection is presence-only.</strong> <code>webgpuAvailable()</code> checks that <code>navigator.gpu</code> is defined — documented in-source as Chrome 113+ and Firefox 141+. The application code never calls <code>requestAdapter()</code> itself; adapter acquisition happens inside ORT's execution-provider initialisation, during <code>InferenceSession.create</code>. So there is no separate "adapter unavailable" state in the code — an adapter failure surfaces as a session-creation throw, and the <code>catch</code> branch retries on WASM using the same JSEP binary.</p>
+
+        <p><strong>The fallback is free.</strong> Because one binary serves both providers, dropping from WebGPU to WASM re-downloads nothing and re-initialises no weights. A user on a machine without a GPU pays no network penalty for the machine that has one.</p>
+
+        <p><strong>The badge describes the session, not the kernels.</strong> <code>activeBackend</code> is set to <code>"webgpu"</code> the moment session creation succeeds with the WebGPU EP in the provider list. Individual operators that the WebGPU EP does not support fall through to the WASM EP <em>inside that same session</em> — and the UI keeps reporting <code>⚡ WebGPU</code>. There is no per-kernel accounting in the codebase and no partition-boundary logging.</p>
+
+        <div class="callout tradeoff">
+          <span class="callout-label">What this means for the badge</span>
+          <p>Read <code>⚡ WebGPU</code> as <em>"the WebGPU EP owns this session"</em>, not as <em>"every operator ran on the GPU"</em>. For a model like MobileViT — a transformer with a long operator tail — partial fallback is plausible in principle. <strong>We have not measured it</strong>, and the code does not currently let us: there is no GPU-path latency measurement on the same page, and no partition log to attribute per-op time. The honest statement is that the badge is session-scoped, and that the per-operator picture is a real gap rather than a solved question.</p>
+        </div>
+
+        <h2 id="cache">Failure mode 4 — what the cache actually keys on</h2>
+
+        <p>The same-page cache exists because multi-step tasks re-visit the same screen constantly — typing into a form, paging a list. Re-running the ViT over byte-identical pixels burns battery and latency for nothing. The design goal was that a cached map is served only when the visible pixels are genuinely unchanged.</p>
+
+        <p>Here is exactly what that means in the implementation. The screenshot is downscaled to <strong>64×64</strong> on a canvas, then an <strong>FNV-1a</strong> hash is computed over <strong>quantized luma samples taken every fourth pixel</strong> — about 256 samples — and rendered base-36. The cache key is:</p>
+
+        <div class="code-block">
+          <span class="code-lang">text — the cache key shape, from extension/core/perception.ts</span>
+          <pre><code>cacheKey = `${pageUrl}#${img.naturalWidth}x${img.naturalHeight}#${regionsKey(...)}#${hash}`;</code></pre>
+        </div>
+
+        <p>A hit therefore requires the URL, the viewport size, <em>and</em> the non-DOM region list to match as well as the hash — which is what makes it conservative rather than merely fast. A scroll, a hover, a spinner, a cursor blink, a canvas redraw all change the sampled luma and produce a miss.</p>
+
+        <p>Three corrections to assumptions I had going in, all confirmed by reading the code:</p>
 
         <div class="callout failure">
-          <span class="callout-label">TODO — unsupported ops forcing partial WASM execution</span>
-          <p>Some MobileViT ops were expected to miss the WebGPU EP and fall through. <strong>To verify:</strong> which ops, whether ORT logged partition boundaries, and the measured GPU-vs-WASM tile-classification latency delta on the same page.</p>
+          <span class="callout-label">The cache is not an LRU</span>
+          <p>It is a plain <code>Map</code> capped at <code>CACHE_MAX = 6</code>, and on overflow it deletes <code>perceptionCache.keys().next().value</code> — the <strong>oldest inserted</strong> key. Entries are not re-inserted on a hit, so the eviction order is insertion order. It behaves like a small FIFO, not an LRU. Under a workload that touches seven distinct pages, the first one is gone.</p>
         </div>
 
-        <div class="callout failure">
-          <span class="callout-label">TODO — WASM memory growth across long agent runs</span>
-          <p>Long-running sessions appeared to accumulate memory in the WASM heap. <strong>To verify:</strong> whether session reuse or per-step session creation was the cause, the observed growth curve, and what the current code does (release vs reuse).</p>
+        <div class="callout lesson">
+          <span class="callout-label">The hash samples luma, not colour</span>
+          <p>Because the FNV-1a input is <code>0.299R + 0.587G + 0.114B</code>, two visually different frames with identical luminance at every sampled point hash the same. A colour-only change on a large flat surface can survive all 256 samples. No such false hit has been observed in the benchmark suite, but it is a real class of blind spot rather than a hypothetical one, and it is the first thing to check if a cached map ever serves stale tiles.</p>
         </div>
 
-        <div class="callout failure">
-          <span class="callout-label">TODO — pixel-hash cache false hits</span>
-          <p>The same-page cache keys on a pixel hash; dynamic pages (clocks, spinners) were expected to thrash it, and near-identical frames to false-hit it. <strong>To verify:</strong> whether any false hit was actually observed in benchmarks, the hash scheme, and the eviction policy in the LRU.</p>
+        <div class="callout decision">
+          <span class="callout-label">The cache never touches the privacy layers</span>
+          <p>The cache short-circuits <code>perceiveScreen</code> and nothing else. Faces, OCR, the DOM sweep, the tokenizer, and the zero-leak gate run fresh on every single step, cached map or not. The cache is also <strong>opt-in</strong>: it only engages when the caller passes <code>pageUrl</code> (the extension passes the tab URL; the agent loop in the bench harness passes <code>location.href</code>). With no <code>pageUrl</code>, there is no caching at all.</p>
         </div>
 
-        <h2 id="debugging-playbook">Debugging playbook (TODO — outline only)</h2>
-        <p>The shape of the playbook this article will end with, pending verification:</p>
+        <h2 id="failure-catalogue">The failure catalogue</h2>
+
+        <p>The audit enumerated every failure point and asked one question of each: <em>does anything sensitive still travel?</em> The table is the useful artifact — it is what "fail-closed" actually means when you have to defend it.</p>
+
+        <table class="data-table">
+          <thead><tr><th>#</th><th>Failure mode</th><th>Consequence</th><th>Fail-open?</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>Model or labels never load (fetch 404, CSP blocks <code>chrome.runtime.getURL</code>)</td><td><code>enabled:false</code>, zero tiles, zero decisions</td><td>No</td></tr>
+            <tr><td>2</td><td>WASM unavailable / bundle missing (stale build, <code>file://</code> page)</td><td>Same degrade path</td><td>No</td></tr>
+            <tr><td>3</td><td>Screenshot image decode fails</td><td>Same degrade path</td><td>No</td></tr>
+            <tr><td>4</td><td>A single tile classification throws</td><td>Tile skipped, loop continues</td><td>No</td></tr>
+            <tr><td>5</td><td>Perception inner timeout (7 s)</td><td>Partial tile set; uncovered regions get no decision</td><td>Partial</td></tr>
+            <tr><td>6</td><td>Grid budget (2.5 s) exceeded mid-grid</td><td>Partial grid — far-from-grid regions untiled</td><td>Partial</td></tr>
+            <tr><td>7</td><td>No overlapping tile for a region</td><td>No escalation for that region</td><td>No</td></tr>
+            <tr><td>8</td><td>Batched ONNX input — ort-web 1.29 wasm</td><td>Degraded logits (~30%), wrong tags and decisions</td><td><strong>Yes, if shipped</strong></td></tr>
+            <tr><td>9</td><td>Server-side block serialisation of <code>screen_perception</code></td><td>Prompt loses the perception block</td><td>No</td></tr>
+          </tbody>
+        </table>
+
+        <p>The catalogue resolves into two shapes. Rows 1–3 are <strong>fail-closed</strong>: the perception pass degrades to nothing and every other layer stays in force. Rows 5–6 are <strong>bounded</strong>: a partial grid means missing <em>additive</em> decisions, while faces and OCR cover the non-DOM regions regardless of tiling. Row 8 was the only one that would have been fail-open — and it was caught by an A/B probe before release, not by a user report.</p>
+
+        <div class="callout lesson">
+          <span class="callout-label">The verdict</span>
+          <p><strong>No fail-open leak path was found.</strong> Every perception failure degrades to the pre-perception baseline: blind redaction, DOM sweep, tokenizer, OCR, faces, and the zero-leak gate all still enforce in full. Perception is an <em>additive backstop</em> — nothing about the shipping guarantee depends on it running at all.</p>
+        </div>
+
+        <p>One residual limit is documented and accepted rather than fixed. A photo-bearing element that lands in a tile the ViT reads as low-info <code>blank</code> gets no perception escalation. That is not a leak: face detection and OCR still operate on the region, and region redaction still applies when either fires. It is a redundancy limit — the two layers would have to be blind simultaneously — and it is exactly what the photo/blank separation measurement exists to surface.</p>
+
+        <h2 id="numbers">The numbers</h2>
+
+        <p>From the benchmark suite's recorded run (<code>benchmarks/results/latest.json</code>, generated 2026-09-17):</p>
+
+        <table class="data-table">
+          <thead><tr><th>Metric</th><th>Value</th></tr></thead>
+          <tbody>
+            <tr><td>Pages where perception ran</td><td class="num">7 / 7</td></tr>
+            <tr><td>Perception pass, average</td><td class="num">3,522.4 ms</td></tr>
+            <tr><td>Per-page perception times</td><td class="num">3,986 / 3,980 / 2,674 / 2,650 / 2,716 / 2,700 / 5,951 ms</td></tr>
+            <tr><td>Tile tags across the run</td><td class="num">blank 7 · uncertain 1 · photo 0 · ui 0 · document 0 · data 0</td></tr>
+            <tr><td>Region escalations</td><td class="num">5</td></tr>
+            <tr><td>Face detection</td><td class="num">278 ms · 2 faces</td></tr>
+            <tr><td>OCR</td><td class="num">151.2 ms · 5 regions · 1 hit</td></tr>
+            <tr><td>Total bundled model footprint</td><td class="num">53.98 MB</td></tr>
+            <tr><td>Zero-leak gate</td><td class="num">pass · 0 hits</td></tr>
+            <tr><td>PII detection, pixels</td><td class="num">precision 0.968 · recall 1.000 · F1 0.984</td></tr>
+          </tbody>
+        </table>
+
+        <p>And the end-to-end latency waterfall, averaged over the same run:</p>
+
+        <table class="data-table">
+          <thead><tr><th>Stage</th><th>Average</th></tr></thead>
+          <tbody>
+            <tr><td>Capture</td><td class="num">112.0 ms</td></tr>
+            <tr><td>Serialize</td><td class="num">2.3 ms</td></tr>
+            <tr><td>Vision (all three passes)</td><td class="num">3,524.1 ms</td></tr>
+            <tr><td>— of which perception</td><td class="num">3,522.4 ms</td></tr>
+            <tr><td>Sanitize</td><td class="num">214.1 ms</td></tr>
+            <tr><td>Image gate</td><td class="num">696.8 ms</td></tr>
+            <tr><td>Total</td><td class="num">3,852.5 ms</td></tr>
+          </tbody>
+        </table>
+
+        <p>Two things are worth noticing in that waterfall. <strong>Perception is 91% of total latency</strong> — the other four stages combined cost under a second. And <strong>vision latency equals perception latency almost exactly</strong> (3,524.1 vs 3,522.4 ms), which is the concurrency fix doing its job: faces and OCR add ~2 ms of wall-clock on top of the ViT instead of ~430 ms of it.</p>
+
+        <p>The tile distribution deserves a note too. MobileViT-Small is an ImageNet model, so flat UI chrome, documents, and charts have no matching class and collapse into the low-confidence band — which the acceptance criteria in <code>benchmarks/perception-eval.mjs</code> treat as <code>blank</code>. That is the correct product outcome rather than a model failure: text PII on those surfaces is handled by the DOM sweep and OCR, never by the ViT. The score the eval actually reports is the photo/blank separation, which measures the signal the model is trusted to provide — <strong>100%</strong> on the labelled-tile ground-truth page, with escalation firing on the photo cell and never on blank cells.</p>
+
+        <h2 id="not-measured">What I did not measure</h2>
+
+        <p>An article like this is only useful if the gaps are as visible as the results. Three things remain open, and none of them are dressed up:</p>
+
+        <ul>
+          <li><strong>GPU-path latency on the same page.</strong> The benchmark harness runs headless Chromium without a WebGPU adapter exposed, so every latency figure above is a WASM-path figure. There is no side-by-side GPU-vs-WASM measurement on the same screenshot, and no per-operator partition data — which is also why the provider badge cannot be taken as a per-kernel measurement.</li>
+          <li><strong>The memory growth curve over long runs.</strong> The shape of the cause is narrowed by the source even though the curve was never captured: the ORT session is a module-level singleton, created once and memoised, so per-step session churn is ruled out. There is no <code>session.release()</code> anywhere in <code>perception.ts</code>, and <code>terminateVision()</code> in <code>vision.ts</code> tears down the Tesseract worker and the face detector but leaves the ORT session and its WASM heap alive for the lifetime of the host context. The same-page cache is bounded at 6 entries, so it is not the leak either. What remains unmeasured is the growth rate of that single long-lived WASM heap.</li>
+          <li><strong>The exact browser build that first exposed the WebGPU fallback.</strong> The fallback design is verified in code, but the original console capture from the environment that triggered it was not recovered, so this article does not claim a specific version, error string, or adapter state. Better to omit it than to reconstruct it from memory.</li>
+        </ul>
+
+        <h2 id="playbook">The debugging playbook</h2>
+
+        <p>What survives from all of this, in the order I would actually apply it:</p>
+
         <ol>
-          <li>Always log the active execution provider per step — silent fallback is the root cause of most "it got slow" reports.</li>
-          <li>Keep a WASM-only baseline measurement per machine; compare, don't assume.</li>
-          <li>Test the offscreen-document path and the Firefox background-page path separately; they fail differently.</li>
-          <li>Treat cache hits as untrusted until the hash scheme is re-read — measure first-run vs cached latencies in CI-style runs.</li>
+          <li><strong>Log the active execution provider per step, always.</strong> A silent fallback turns "why is it slow?" into a mystery. The provider label is session-scoped — it is the cheapest possible signal and it should never be optional.</li>
+          <li><strong>A/B every inference optimisation against a reference runtime.</strong> The batch bug was invisible in every local signal: no crash, no error, plausible confidences. It was only visible because <code>onnxruntime-node</code> was run on the same inputs and disagreed. Keep the tripwire (<code>_abTest()</code>) in the tree, not in a scratch script.</li>
+          <li><strong>Never let a backstop share a budget with the layers it backstops.</strong> Per-pass timeouts, not one shared deadline. Perception is best-effort; faces and OCR are not.</li>
+          <li><strong>Check that "corrupt" and "unsure" are distinguishable in your thresholds.</strong> Confidence bands are a design surface. A bug that lands in the <code>uncertain</code> band does not look like a bug — it looks like a cautious model, and it will happily escalate for safety while quietly destroying the signal you built the model for.</li>
+          <li><strong>Make escalation additive and prove it.</strong> A miss should cost performance, not privacy. Enumerate every failure point and ask the same question of each: does anything sensitive still travel?</li>
+          <li><strong>Measure first-run against cached separately.</strong> The cache is a latency optimisation; its correctness argument rests on the hash actually tracking visible change. Know exactly which samples it takes — luma, every fourth pixel, 64×64 — so you know which class of change it cannot see.</li>
+          <li><strong>Test the Chrome offscreen path and the Firefox background-page path separately.</strong> They share <code>vision-host.ts</code> and they fail differently.</li>
+          <li><strong>Write the failure catalogue down before the failure.</strong> The audit that produced the table above was committed in the same change as the perception stack, not written afterwards as a post-mortem. That is why rows 1–3 and 5–7 could be closed as "no fail-open" from source rather than from argument.</li>
         </ol>
 
-        <h2 id="takeaways">Takeaways (provisional)</h2>
-        <p>Two things are already safe to claim because they are documented and benchmarked, not anecdotal:</p>
+        <h2 id="takeaways">Takeaways</h2>
         <ol>
-          <li><strong>Surface the execution provider in the UI.</strong> Making WebGPU/WASM visible in the resource meter turned "why is it slow?" from a mystery into a screenshot.</li>
-          <li><strong>Bundle both runtimes.</strong> Shipping the <code>.jsep</code> build with WASM fallback inside the extension means first-run latency never depends on a CDN, and fallback never depends on a network fetch.</li>
+          <li><strong>Surface the execution provider in the UI.</strong> Making WebGPU/WASM visible in the resource meter turned "why is it slow?" from a mystery into a screenshot. But report it honestly: it is a session-level label, not a per-kernel measurement.</li>
+          <li><strong>Bundle both runtimes.</strong> Shipping the <code>.jsep</code> build with a WASM fallback inside the extension means first-run latency never depends on a CDN, and fallback never depends on a network fetch.</li>
+          <li><strong>Verify across runtimes, not within one.</strong> The batch bug was found by disagreement between two implementations of the same maths, not by any signal inside either one.</li>
+          <li><strong>Design the failure path before the happy path.</strong> The guarantee that perception can fail without leaking came from enumerating nine failure modes and checking each one, not from being careful in the main path.</li>
+          <li><strong>Concurrency is a privacy control.</strong> Moving three passes from serial to <code>Promise.all</code> was a latency fix and a fail-closed fix at the same time, because it removed the mechanism by which the backstop could starve the primary layers.</li>
         </ol>
 
         <div class="article-end">
           <h2 id="references">References</h2>
           <ul class="ref-list">
             <li>PRIVYSE repository — <a href="https://github.com/The-Infernix/PRIVYSE" target="_blank" rel="noopener noreferrer">github.com/The-Infernix/PRIVYSE</a></li>
-            <li><code>extension/core/perception.ts</code> — WebGPU-first ORT session setup</li>
+            <li><code>docs/perception-failure-path-audit.md</code> — the perception failure-path audit (committed 2026-09-13)</li>
+            <li><code>extension/core/perception.ts</code> — WebGPU-first ORT session setup, tag thresholds, cache key, A/B tripwire</li>
+            <li><code>extension/core/vision.ts</code> — concurrent passes, per-pass timeouts, <code>terminateVision</code></li>
             <li><code>extension/core/vision-host.ts</code> — shared Chrome-offscreen / Firefox-background host</li>
-            <li><code>docs/perception-failure-path-audit.md</code> — the perception failure-path audit</li>
+            <li><code>benchmarks/probe-batch.mjs</code> — the batch-vs-single A/B that pins the wasm bug</li>
+            <li><code>benchmarks/perception-eval.mjs</code> — labelled-tile ground truth, photo/blank separation</li>
+            <li><code>benchmarks/results/latest.json</code> — the recorded run quoted above (generated 2026-09-17)</li>
             <li>Companion article: <a href="./privyse-privacy-first-browser-agent.html">Building PRIVYSE: Designing a Privacy-First Browser Agent</a></li>
           </ul>
 
@@ -205,7 +403,7 @@ const providers = hasWebGPU ? ["webgpu", "wasm"] : ["wasm"];
   </main>
 
   <footer class="site-footer section-wrap">
-    <a class="brand footer-brand" href="../../" aria-label="Back to portfolio home">
+    <a class="brand footer-brand" href="../../" aria-label="Infernix home">
       <svg class="brand-logo" viewBox="0 0 36 36" width="28" height="28" aria-hidden="true" focusable="false">
         <rect x="1" y="1" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1" opacity=".55"/>
         <path d="M11 9h13v4h-8v3h7v4h-7v7h-5z" fill="currentColor"/>
